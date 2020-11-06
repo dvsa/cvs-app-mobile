@@ -80,17 +80,13 @@ export class TestStationHomePage implements OnInit {
   }
 
   async getStarted() {
-    let err: Error, IsDataSynced: boolean;
-    [err, IsDataSynced] = await this.syncService.startSync();
-
+    const IsDataSynced: boolean = await this.syncService.startSync();
     if (IsDataSynced) {
       this.setPage();
     } else {
       const log: Log = {
         type: LOG_TYPES.ERROR,
-        message: `User ${this.authService.getOid()} having issue(s) with syncing data: Error ${JSON.stringify(
-          err
-        )}`,
+        message: `User ${this.authService.getOid()} having issue(s) with syncing data:`,
         timestamp: Date.now()
       };
       this.store$.dispatch(new logsActions.SaveLog(log));

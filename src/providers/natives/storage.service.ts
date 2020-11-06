@@ -53,6 +53,17 @@ export class StorageService {
     });
   }
 
+  /**
+   * Further discuss on this approach if adopted. Hence if used will cause
+   * some refactoring in the app
+   * @param key data key
+   * @param value data value
+   */
+  async updateAsync(key: string, value: any): Promise<any> {
+    await this.storage.remove(key);
+    return await this.storage.set(key, value);
+  }
+
   watchStorage(): Observable<any> {
     return this.storageSub.asObservable();
   }

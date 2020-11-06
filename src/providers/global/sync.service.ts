@@ -2,15 +2,13 @@ import { Injectable } from '@angular/core';
 import { HTTPService } from './http.service';
 import { catchError, map, retryWhen } from 'rxjs/operators';
 import { genericRetryStrategy } from '../utils/rxjs.utils';
-import { TestStationReferenceDataModel } from '../../models/reference-data-models/test-station.model';
 import { APP_STRINGS, APP_UPDATE, STORAGE } from '../../app/app.enums';
 import { StorageService } from '../natives/storage.service';
-import { AlertController, Events, LoadingController } from 'ionic-angular';
+import { AlertController, Events, Loading, LoadingController } from 'ionic-angular';
 import { _throw } from 'rxjs/observable/throw';
 import { OpenNativeSettings } from '@ionic-native/open-native-settings';
 import { CallNumber } from '@ionic-native/call-number';
 import { Observable } from 'rxjs';
-import { of } from 'rxjs/observable/of';
 import { AppConfig } from '../../../config/app.config';
 import { AppService } from './app.service';
 import { Firebase } from '@ionic-native/firebase';
@@ -25,10 +23,7 @@ declare let cordova: any;
 
 @Injectable()
 export class SyncService {
-  initSyncDone: boolean;
-  loading = this.loadingCtrl.create({
-    content: 'Loading...'
-  });
+  loading: Loading;
   loadOrder: Observable<any>[] = [];
   oid: string;
 
@@ -47,12 +42,10 @@ export class SyncService {
     private appVersion: AppVersion
   ) {}
 
-  public async startSync(): Promise<any[]> {
+  public async startSync(): Promise<boolean> {
     this.checkForUpdate();
 
     if (!this.appService.getRefDataSync()) {
-      this.loading.present();
-
       ['Atfs', 'Defects', 'TestTypes', 'Preparers'].forEach((elem) =>
         this.loadOrder.push(this.getDataFromMicroservice(elem))
       );
@@ -60,7 +53,7 @@ export class SyncService {
       return await this.getAllData(this.loadOrder);
     }
 
-    return Promise.resolve([null, true]);
+    return Promise.resolve(true);
   }
 
   public async checkForUpdate() {
@@ -111,23 +104,50 @@ export class SyncService {
     });
   }
 
-  private async getAllData(loadOrder: Observable<any>[]): Promise<any[]> {
-    return Observable.forkJoin(loadOrder)
+  async getAllData(loadOrder: Observable<any>[]): Promise<boolean> {
+    this.showLoading(true);
+
+    const apiData: { key: string; value: any[] }[] = await Observable.forkJoin(loadOrder)
       .toPromise()
-      .then((result: any[]) => {
-        this.appService.setRefDataSync(true);
-        this.loading.dismissAll();
-        return [null, result.length === 4]; // ensure we have the exact and successful 4 apis call
-      })
-      .catch(() => [this.handleError()]);
+      .catch(async () => {
+        await this.handleError();
+        return [];
+      });
+
+    if (apiData.length) {
+      await this.syncToStore(apiData);
+    }
+
+    this.showLoading(false);
+
+    return Promise.resolve(apiData.length > 0);
   }
 
-  getDataFromMicroservice(microservice): Observable<TestStationReferenceDataModel[]> {
+  showLoading(status: boolean) {
+    if (status) {
+      this.loading = this.loadingCtrl.create({
+        content: 'Loading...'
+      });
+
+      this.loading.present();
+    } else {
+      this.loading.dismiss();
+    }
+  }
+
+  private async syncToStore(syncData: { key: string; value: any[] }[]) {
+    await Promise.all(
+      syncData.map((apiObj) => this.storageService.updateAsync(apiObj.key, apiObj.value))
+    );
+
+    this.appService.setRefDataSync(true);
+  }
+
+  getDataFromMicroservice(microservice: string): Observable<{ key: string; value: any[] }> {
     this.oid = this.authService.getOid();
     return this.httpService['get' + microservice]().pipe(
       map((data: any) => {
-        this.storageService.update(STORAGE[microservice.toUpperCase()], data.body);
-        return data.body;
+        return { key: STORAGE[microservice.toUpperCase()], value: data.body };
       }),
       retryWhen(genericRetryStrategy()),
       catchError((error) => {
@@ -148,7 +168,7 @@ export class SyncService {
     );
   }
 
-  handleError(): Observable<any> {
+  async handleError() {
     let alert = this.alertCtrl.create({
       title: 'Unable to load data',
       enableBackdropDismiss: false,
@@ -180,7 +200,6 @@ export class SyncService {
       ]
     });
 
-    alert.present();
-    return _throw('Something bad happened; please try again later.');
+    await alert.present();
   }
 }
