@@ -8,30 +8,44 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { OdometerReadingPage } from './odometer-reading';
 import { VehicleService } from '../../../../providers/vehicle/vehicle.service';
 import { VehicleServiceMock } from '../../../../../test-config/services-mocks/vehicle-service.mock';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
 import { VehicleDataMock } from '../../../../assets/data-mocks/vehicle-data.mock';
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
+import { AnalyticsService, DurationService } from '../../../../providers/global';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  DURATION_TYPE
+} from '../../../../app/app.enums';
+import { Duration } from '../../../../models/duration.model';
 
 describe('Component: OdometerReadingPage', () => {
   let component: OdometerReadingPage;
   let fixture: ComponentFixture<OdometerReadingPage>;
   let vehicleService: VehicleService;
-  // let firebaseLogsService: FirebaseLogsService;
   let navParams: NavParams;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
+  let durationService: DurationService;
 
   let VEHICLE: VehicleModel = VehicleDataMock.VehicleData;
 
   beforeEach(() => {
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'addCustomDimension'
+    ]);
+
     TestBed.configureTestingModule({
       declarations: [OdometerReadingPage],
       imports: [IonicModule.forRoot(OdometerReadingPage)],
       providers: [
+        DurationService,
         { provide: NavParams, useClass: NavParamsMock },
         { provide: ViewController, useFactory: () => ViewControllerMock.instance() },
         { provide: VisitService, useClass: VisitServiceMock },
-        { provide: VehicleService, useClass: VehicleServiceMock }
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock }
+        { provide: VehicleService, useClass: VehicleServiceMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -40,7 +54,8 @@ describe('Component: OdometerReadingPage', () => {
     component = fixture.componentInstance;
     navParams = TestBed.get(NavParams);
     vehicleService = TestBed.get(VehicleService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
+    durationService = TestBed.get(DurationService);
   });
 
   beforeEach(() => {
@@ -61,7 +76,6 @@ describe('Component: OdometerReadingPage', () => {
     component = null;
     navParams = null;
     vehicleService = null;
-    // firebaseLogsService = null;
   });
 
   it('should create component', () => {
@@ -80,10 +94,46 @@ describe('Component: OdometerReadingPage', () => {
     expect(component.errorIncomplete).toBeTruthy();
   });
 
-  it('should check if logEvent was triggered', () => {
-    // spyOn(firebaseLogsService, 'logEvent');
-    // component.onSave();
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalled();
+  describe('onSave', () => {
+    let timeStart: number;
+    let timeEnd: number;
+    let strType: string;
+    let duration: Duration;
+
+    beforeEach(() => {
+      timeStart = 1620242516913;
+      timeEnd = 1620243020205;
+      spyOn(Date, 'now').and.returnValue(timeEnd);
+
+      strType = DURATION_TYPE[DURATION_TYPE.ODOMETER_READING];
+      duration = { start: timeStart, end: timeEnd };
+
+      spyOn(durationService, 'setDuration');
+      spyOn(durationService, 'getDuration').and.returnValue(duration);
+      spyOn(durationService, 'getTakenDuration').and.returnValue(timeEnd);
+    });
+
+    it('should track odometer reading duration on save', async () => {
+      await component.onSave();
+
+      expect(durationService.setDuration).toHaveBeenCalledWith({ end: timeEnd }, strType);
+      expect(durationService.getDuration).toHaveBeenCalledWith(strType);
+      expect(durationService.getTakenDuration).toHaveBeenCalledWith(duration);
+    });
+
+    it('should track odometer event on save', async () => {
+      const label = 'ADD_ODOMETER_READING_START_TIME';
+      await component.trackOdometerReadingDuration(label, timeStart.toString());
+
+      expect(analyticsService.logEvent).toHaveBeenCalledWith({
+        category: ANALYTICS_EVENT_CATEGORIES.DURATION,
+        event: ANALYTICS_EVENTS.ADD_ODOMETER_READING_TIME_TAKEN,
+        label: ANALYTICS_LABEL[label]
+      });
+
+      const key = Object.keys(ANALYTICS_LABEL).indexOf(label) + 1;
+      expect(analyticsService.addCustomDimension).toHaveBeenCalledWith(key, timeStart.toString());
+    });
   });
 
   it('should test ngOnInit logic', () => {

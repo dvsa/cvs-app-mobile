@@ -27,14 +27,20 @@ import { CallNumber } from '@ionic-native/call-number';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { TestDataModelMock } from '../../../../assets/data-mocks/data-model/test-data-model.mock';
 import { VehicleDataMock } from '../../../../assets/data-mocks/vehicle-data.mock';
-import { APP_STRINGS, STORAGE, VEHICLE_TYPE } from '../../../../app/app.enums';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  ANALYTICS_SCREEN_NAMES,
+  ANALYTICS_VALUE,
+  APP_STRINGS,
+  STORAGE,
+  VEHICLE_TYPE
+} from '../../../../app/app.enums';
 import { AuthenticationService } from '../../../../providers/auth/authentication/authentication.service';
 import { AuthenticationServiceMock } from './../../../../../test-config/services-mocks/authentication-service.mock';
 import { Store } from '@ngrx/store';
 import { TestStore } from '../../../../modules/logs/data-store.service.mock';
-// import { Firebase } from '@ionic-native/firebase';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
 import { AppService } from '../../../../providers/global/app.service';
 import { AppServiceMock } from '../../../../../test-config/services-mocks/app-service.mock';
 import { VehicleLookupSearchCriteriaData } from '../../../../assets/app-data/vehicle-lookup-search-criteria/vehicle-lookup-search-criteria.data';
@@ -44,17 +50,19 @@ import { deepCopy } from 'ionic-angular/util/util';
 import { ActivityService } from '../../../../providers/activity/activity.service';
 import { ActivityServiceMock } from '../../../../../test-config/services-mocks/activity-service.mock';
 import { LogsProvider } from '../../../../modules/logs/logs.service';
+import { AnalyticsService } from '../../../../providers/global';
 
 describe('Component: VehicleLookupPage', () => {
   let component: VehicleLookupPage;
   let fixture: ComponentFixture<VehicleLookupPage>;
   let openNativeSettingsSpy: any;
   let storageService: StorageServiceMock;
-  // let firebaseLogsService: FirebaseLogsService;
   let modalCtrl: ModalController;
   let vehicleService: VehicleService;
   let logProvider: LogsProvider;
   let logProviderSpy: any;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   const TEST_DATA = TestDataModelMock.TestData;
   const VEHICLE = VehicleDataMock.VehicleData;
@@ -68,16 +76,20 @@ describe('Component: VehicleLookupPage', () => {
       dispatchLog: () => true
     });
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'setCurrentPage'
+    ]);
+
     TestBed.configureTestingModule({
       declarations: [VehicleLookupPage],
       imports: [IonicModule.forRoot(VehicleLookupPage)],
       providers: [
-        // Firebase,
         CallNumber,
         { provide: NavController, useFactory: () => NavControllerMock.instance() },
         { provide: NavParams, useClass: NavParamsMock },
         { provide: VisitService, useClass: VisitServiceMock },
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy },
         { provide: AlertController, useFactory: () => AlertControllerMock.instance() },
         { provide: LoadingController, useFactory: () => LoadingControllerMock.instance(loading) },
         { provide: ModalController, useFactory: () => ModalControllerMock.instance() },
@@ -98,7 +110,7 @@ describe('Component: VehicleLookupPage', () => {
     fixture = TestBed.createComponent(VehicleLookupPage);
     component = fixture.componentInstance;
     storageService = TestBed.get(StorageService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
     modalCtrl = TestBed.get(ModalController);
     vehicleService = TestBed.get(VehicleService);
     logProvider = TestBed.get(LogsProvider);
@@ -119,9 +131,11 @@ describe('Component: VehicleLookupPage', () => {
   });
 
   it('should test ionViewDidEnterLogic', () => {
-    // spyOn(firebaseLogsService, 'setScreenName');
-    // component.ionViewDidEnter();
-    // expect(firebaseLogsService.setScreenName).toHaveBeenCalled();
+    component.ionViewDidEnter();
+
+    expect(analyticsService.setCurrentPage).toHaveBeenCalledWith(
+      ANALYTICS_SCREEN_NAMES.VEHICLE_SEARCH
+    );
   });
 
   it('should test ionViewWillEnter lifecycle hook', () => {
@@ -152,23 +166,30 @@ describe('Component: VehicleLookupPage', () => {
     expect(component.getTechRecordQueryParam().queryParam).toEqual('trailerId');
   });
 
-  it('should empty ionic storage if the test history cannot be retrieved', () => {
+  it('should empty ionic storage if the test history cannot be retrieved', async () => {
     spyOn(storageService, 'update');
     vehicleService.getVehicleTechRecords = jasmine.createSpy().and.callFake(() => of([VEHICLE]));
     vehicleService.getTestResultsHistory = jasmine
       .createSpy()
       .and.callFake(() => _throw('Error'));
-    component.searchVehicle('TESTVIN', loading);
+
+    await component.searchVehicle('TESTVIN', loading);
 
     expect(storageService.update).toHaveBeenCalledTimes(1);
     expect(storageService.update).toHaveBeenCalledWith(
       STORAGE.TEST_HISTORY + VEHICLE.systemNumber,
       []
     );
+    expect(analyticsService.logEvent).toHaveBeenCalledWith({
+      category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+      event: ANALYTICS_EVENTS.TEST_ERROR,
+      label: ANALYTICS_VALUE.TEST_RESULT_HISTORY_FAILED
+    });
   });
 
   it('should dismiss the loading when the skeleton alert is displayed', async(() => {
     const skeletonVehicle = deepCopy(VEHICLE);
+
     skeletonVehicle.techRecord.recordCompleteness = 'skeleton';
     vehicleService.getVehicleTechRecords = jasmine
       .createSpy()

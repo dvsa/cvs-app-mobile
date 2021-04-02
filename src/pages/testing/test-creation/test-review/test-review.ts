@@ -13,11 +13,14 @@ import {
 import { VisitModel } from '../../../../models/visit/visit.model';
 import { CommonFunctionsService } from '../../../../providers/utils/common-functions';
 import {
+  ANALYTICS_SCREEN_NAMES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_LABEL,
+  ANALYTICS_VALUE,
   APP_STRINGS,
   DATE_FORMAT,
   DEFICIENCY_CATEGORY,
-  FIREBASE,
-  FIREBASE_SCREEN_NAMES,
   LOCAL_STORAGE,
   LOG_TYPES,
   ODOMETER_METRIC,
@@ -42,13 +45,11 @@ import { catchError } from 'rxjs/operators';
 import { StorageService } from '../../../../providers/natives/storage.service';
 import { DefectsService } from '../../../../providers/defects/defects.service';
 import { AuthenticationService } from '../../../../providers/auth/authentication/authentication.service';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
 import { ActivityService } from '../../../../providers/activity/activity.service';
-// import { Firebase } from '@ionic-native/firebase';
 import { TestResultModel } from '../../../../models/tests/test-result.model';
 import { RoadworthinessTestTypesData } from '../../../../assets/app-data/test-types-data/roadworthiness-test-types.data';
 import { AdrTestTypesData } from '../../../../assets/app-data/test-types-data/adr-test-types.data';
-import { AppService } from '../../../../providers/global';
+import { AppService, AnalyticsService } from '../../../../providers/global';
 import { TirTestTypesData } from '../../../../assets/app-data/test-types-data/tir-test-types.data';
 import { TestTypeService } from '../../../../providers/test-type/test-type.service';
 import { LogsProvider } from '../../../../modules/logs/logs.service';
@@ -91,9 +92,8 @@ export class TestReviewPage implements OnInit {
     private testService: TestService,
     private loadingCtrl: LoadingController,
     private storageService: StorageService,
-    // private firebase: Firebase,
     private authenticationService: AuthenticationService,
-    // private firebaseLogsService: FirebaseLogsService,
+    private analyticsService: AnalyticsService,
     private activityService: ActivityService,
     public appService: AppService,
     private testTypeService: TestTypeService,
@@ -122,7 +122,7 @@ export class TestReviewPage implements OnInit {
   }
 
   ionViewDidEnter() {
-    // this.firebaseLogsService.setScreenName(FIREBASE_SCREEN_NAMES.TEST_REVIEW);
+    this.analyticsService.setCurrentPage(ANALYTICS_SCREEN_NAMES.TEST_REVIEW);
   }
 
   getVehicleTypeIconToShow(vehicle: VehicleModel) {
@@ -383,7 +383,10 @@ export class TestReviewPage implements OnInit {
           timestamp: Date.now()
         });
 
-        // this.firebaseLogsService.logEvent(FIREBASE.SUBMIT_TEST);
+        this.analyticsService.logEvent({
+          category: ANALYTICS_EVENT_CATEGORIES.TEST,
+          event: ANALYTICS_EVENTS.SUBMIT_TEST
+        });
 
         for (let testResult of testResultsArr) {
           const activity = this.activityService.createActivityBodyForCall(
@@ -414,10 +417,7 @@ export class TestReviewPage implements OnInit {
                 timestamp: Date.now()
               });
 
-              // this.firebase.logEvent('test_error', {
-              //   content_type: 'error',
-              //   item_id: 'Wait activity submission failed'
-              // });
+              this.trackErrorOnTestSubmission(ANALYTICS_VALUE.WAIT_ACTIVITY_SUBMISSION_FAILED);
             }
           );
         }
@@ -431,13 +431,18 @@ export class TestReviewPage implements OnInit {
       (error) => {
         LOADING.dismiss();
         TRY_AGAIN_ALERT.present();
-        // this.firebaseLogsService.logEvent(
-        //   FIREBASE.TEST_ERROR,
-        //   FIREBASE.ERROR,
-        //   FIREBASE.TEST_SUBMISSION_FAILED
-        // );
+
+        this.trackErrorOnTestSubmission(ANALYTICS_VALUE.TEST_SUBMISSION_FAILED);
       }
     );
+  }
+
+  private async trackErrorOnTestSubmission(value: string) {
+    await this.analyticsService.logEvent({
+      category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+      event: ANALYTICS_EVENTS.TEST_ERROR,
+      label: value
+    });
   }
 
   getCountryStringToBeDisplayed(vehicle: VehicleModel) {

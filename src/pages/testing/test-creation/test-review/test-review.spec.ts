@@ -38,9 +38,6 @@ import { VisitDataMock } from '../../../../assets/data-mocks/visit-data.mock';
 import { AuthenticationService } from '../../../../providers/auth/authentication/authentication.service';
 import { AuthenticationServiceMock } from '../../../../../test-config/services-mocks/authentication-service.mock';
 import { TestResultServiceMock } from '../../../../../test-config/services-mocks/test-result-service.mock';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
-// import { Firebase } from '@ionic-native/firebase';
 import { ActivityService } from '../../../../providers/activity/activity.service';
 import { ActivityServiceMock } from '../../../../../test-config/services-mocks/activity-service.mock';
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
@@ -54,6 +51,7 @@ import { TestTypeService } from '../../../../providers/test-type/test-type.servi
 import { TestTypeServiceMock } from '../../../../../test-config/services-mocks/test-type-service.mock';
 import { SpecialistCustomDefectModel } from '../../../../models/defects/defect-details.model';
 import { LogsProvider } from '../../../../modules/logs/logs.service';
+import { AnalyticsService } from '../../../../providers/global';
 
 describe('Component: TestReviewPage', () => {
   let component: TestReviewPage;
@@ -68,6 +66,8 @@ describe('Component: TestReviewPage', () => {
   let navCtrl: NavController;
   let logProvider: LogsProvider;
   let logProviderSpy: any;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   let vehicle: VehicleTechRecordModel = TechRecordDataMock.VehicleTechRecordData;
   const VEHICLE: VehicleModel = VehicleDataMock.VehicleData;
@@ -77,11 +77,15 @@ describe('Component: TestReviewPage', () => {
       dispatchLog: () => true
     });
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'setCurrentPage'
+    ]);
+
     TestBed.configureTestingModule({
       declarations: [TestReviewPage],
       imports: [IonicModule.forRoot(TestReviewPage)],
       providers: [
-        // Firebase,
         CommonFunctionsService,
         OpenNativeSettings,
         DefectsService,
@@ -100,7 +104,7 @@ describe('Component: TestReviewPage', () => {
         { provide: VisitService, useClass: VisitServiceMock },
         { provide: AuthenticationService, useClass: AuthenticationServiceMock },
         { provide: NavParams, useClass: NavParamsMock },
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy },
         { provide: AppService, useClass: AppServiceMock },
         { provide: LogsProvider, useValue: logProviderSpy }
       ],
@@ -120,6 +124,7 @@ describe('Component: TestReviewPage', () => {
     modalCtrl = TestBed.get(ModalController);
     navCtrl = TestBed.get(NavController);
     logProvider = TestBed.get(LogsProvider);
+    analyticsService = TestBed.get(AnalyticsService);
   });
 
   beforeEach(() => {

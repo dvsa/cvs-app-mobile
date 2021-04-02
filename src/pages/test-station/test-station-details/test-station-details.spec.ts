@@ -9,7 +9,6 @@ import {
   LoadingController
 } from 'ionic-angular';
 import { PipesModule } from '../../../pipes/pipes.module';
-// import { Firebase } from '@ionic-native/firebase';
 import {
   NavControllerMock,
   AlertControllerMock,
@@ -25,13 +24,17 @@ import { TestStationReferenceDataModel } from '../../../models/reference-data-mo
 import { NavParamsMock } from '../../../../test-config/ionic-mocks/nav-params.mock';
 import { Store } from '@ngrx/store';
 import { TestStore } from '../../../modules/logs/data-store.service.mock';
-// import { FirebaseLogsService } from '../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../test-config/services-mocks/firebaseLogsService.mock';
-import { AppService } from '../../../providers/global/app.service';
+import { AppService, AnalyticsService } from '../../../providers/global';
 import { AppServiceMock } from '../../../../test-config/services-mocks/app-service.mock';
 import { LogsProvider } from '../../../modules/logs/logs.service';
 import { AuthenticationService } from '../../../providers/auth';
 import { AuthenticationServiceMock } from '../../../../test-config/services-mocks/authentication-service.mock';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_SCREEN_NAMES,
+  ANALYTICS_VALUE
+} from '../../../app/app.enums';
 
 describe('Component: TestStationDetailsPage', () => {
   let component: TestStationDetailsPage;
@@ -40,29 +43,29 @@ describe('Component: TestStationDetailsPage', () => {
   let openNativeSettingsSpy: any;
   let navParams: NavParams;
   let visitServiceMock: VisitServiceMock;
-  // let firebase: Firebase;
-  let firebaseSpy: any;
   let alertCtrl: AlertController;
-  // let firebaseLogsService: FirebaseLogsService;
   let logProvider: LogsProvider;
   let logProviderSpy;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   beforeEach(() => {
     callNumberSpy = jasmine.createSpyObj('CallNumber', ['callNumber']);
     openNativeSettingsSpy = jasmine.createSpyObj('OpenNativeSettings', ['open']);
-    firebaseSpy = jasmine.createSpyObj('Firebase', ['logEvent']);
     logProviderSpy = jasmine.createSpyObj('LogsProvider', {
       dispatchLog: () => true
     });
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'setCurrentPage'
+    ]);
 
     TestBed.configureTestingModule({
       declarations: [TestStationDetailsPage],
       imports: [IonicModule.forRoot(TestStationDetailsPage), PipesModule],
       providers: [
-        // { provide: Firebase, useValue: firebaseSpy },
         { provide: NavController, useFactory: () => NavControllerMock.instance() },
         { provide: NavParams, useClass: NavParamsMock },
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
         { provide: AlertController, useFactory: () => AlertControllerMock.instance() },
         { provide: ViewController, useFactory: () => ViewControllerMock.instance() },
         { provide: LoadingController, useFactory: () => LoadingControllerMock.instance() },
@@ -72,7 +75,8 @@ describe('Component: TestStationDetailsPage', () => {
         { provide: AuthenticationService, useClass: AuthenticationServiceMock },
         { provide: Store, useClass: TestStore },
         { provide: AppService, useClass: AppServiceMock },
-        { provide: LogsProvider, useValue: logProviderSpy }
+        { provide: LogsProvider, useValue: logProviderSpy },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -83,9 +87,8 @@ describe('Component: TestStationDetailsPage', () => {
     component = fixture.componentInstance;
     navParams = TestBed.get(NavParams);
     visitServiceMock = TestBed.get(VisitService);
-    // firebase = TestBed.get(Firebase);
     alertCtrl = TestBed.get(AlertController);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
     logProvider = TestBed.get(LogsProvider);
   });
 
@@ -108,7 +111,6 @@ describe('Component: TestStationDetailsPage', () => {
     fixture.destroy();
     component = null;
     navParams = null;
-    // firebase = null;
   });
 
   it('should create component', () => {
@@ -117,18 +119,21 @@ describe('Component: TestStationDetailsPage', () => {
   });
 
   it('should test ionViewDidEnterLogic', () => {
-    // spyOn(firebaseLogsService, 'setScreenName');
-    // component.ionViewDidEnter();
-    // expect(firebaseLogsService.setScreenName).toHaveBeenCalled();
+    component.ionViewDidEnter();
+
+    expect(analyticsService.setCurrentPage).toHaveBeenCalledWith(
+      ANALYTICS_SCREEN_NAMES.TEST_STATION_DETAILS
+    );
   });
 
-  it('should test confirmStartVisit', () => {
+  it('should test confirmStartVisit if error', () => {
     visitServiceMock.isError = true;
     component.confirmStartVisit();
-    // expect(firebase.logEvent).toHaveBeenCalled();
-    visitServiceMock.isError = false;
-    component.confirmStartVisit();
-    expect(component.isNextPageLoading).toBeFalsy();
+    expect(analyticsService.logEvent).toHaveBeenCalledWith({
+      category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+      event: ANALYTICS_EVENTS.TEST_ERROR,
+      label: ANALYTICS_VALUE.START_ACTIVITY_FAILED
+    });
   });
 
   it('should create reportIssue alert', () => {

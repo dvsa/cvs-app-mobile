@@ -19,7 +19,13 @@ import {
   VEHICLE_TYPE,
   TEST_TYPE_RESULTS,
   MOD_TYPES,
-  DEFICIENCY_CATEGORY
+  DEFICIENCY_CATEGORY,
+  ANALYTICS_SCREEN_NAMES,
+  DURATION_TYPE,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  ANALYTICS_VALUE
 } from '../../../../app/app.enums';
 import { TestService } from '../../../../providers/test/test.service';
 import { TestServiceMock } from '../../../../../test-config/services-mocks/test-service.mock';
@@ -40,8 +46,6 @@ import {
   ModalControllerMock,
   NavControllerMock
 } from 'ionic-mocks';
-// import { FirebaseLogsService } from "../../../../providers/firebase-logs/firebase-logs.service";
-// import { FirebaseLogsServiceMock } from "../../../../../test-config/services-mocks/firebaseLogsService.mock";
 import { VehicleDataMock } from '../../../../assets/data-mocks/vehicle-data.mock';
 import { TestDataModelMock } from '../../../../assets/data-mocks/data-model/test-data-model.mock';
 import { TestTypeService } from '../../../../providers/test-type/test-type.service';
@@ -50,6 +54,7 @@ import { DefectDetailsDataMock } from '../../../../assets/data-mocks/defect-deta
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
 import { EuVehicleCategoryData } from '../../../../assets/app-data/eu-vehicle-category/eu-vehicle-category';
 import { SpecialistCustomDefectModel } from '../../../../models/defects/defect-details.model';
+import { AnalyticsService, DurationService } from '../../../../providers/global';
 
 describe('Component: TestCreatePage', () => {
   let component: TestCreatePage;
@@ -62,9 +67,11 @@ describe('Component: TestCreatePage', () => {
   let testService: TestService;
   let stateReformingService: StateReformingService;
   let callNumberSpy: any;
-  // let firebaseLogsService: FirebaseLogsService;
   let modalctrl: ModalController;
   let commonFuncService: CommonFunctionsService;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
+  let durationService: DurationService;
 
   const ADDED_VEHICLE_TEST: TestTypeModel = TestTypeDataModelMock.TestTypeData;
   let vehicle: VehicleTechRecordModel = TechRecordDataMock.VehicleTechRecordData;
@@ -75,12 +82,18 @@ describe('Component: TestCreatePage', () => {
   beforeEach(async(() => {
     callNumberSpy = jasmine.createSpyObj('CallNumber', ['callPhoneNumber']);
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'setCurrentPage',
+      'addCustomDimension'
+    ]);
+
     TestBed.configureTestingModule({
       declarations: [TestCreatePage],
       imports: [IonicModule.forRoot(TestCreatePage)],
       providers: [
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
         CommonFunctionsService,
+        DurationService,
         { provide: Events, useFactory: () => EventsMock.instance() },
         { provide: NavController, useFactory: () => NavControllerMock.instance() },
         { provide: ModalController, useFactory: () => ModalControllerMock.instance() },
@@ -92,7 +105,8 @@ describe('Component: TestCreatePage', () => {
         { provide: VisitService, useClass: VisitServiceMock },
         { provide: TestService, useClass: TestServiceMock },
         { provide: NavParams, useClass: NavParamsMock },
-        { provide: TestTypeService, useClass: TestTypeServiceMock }
+        { provide: TestTypeService, useClass: TestTypeServiceMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -106,9 +120,10 @@ describe('Component: TestCreatePage', () => {
     appService = TestBed.get(AppService);
     visitService = TestBed.get(VisitService);
     stateReformingService = TestBed.get(StateReformingService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
     modalctrl = TestBed.get(ModalController);
     commonFuncService = TestBed.get(CommonFunctionsService);
+    analyticsService = TestBed.get(AnalyticsService);
+    durationService = TestBed.get(DurationService);
   }));
 
   beforeEach(() => {
@@ -129,7 +144,6 @@ describe('Component: TestCreatePage', () => {
     vehicleService = null;
     visitService = null;
     stateReformingService = null;
-    // firebaseLogsService = null;
     modalctrl = null;
     navCtrl = null;
     commonFuncService = null;
@@ -153,9 +167,10 @@ describe('Component: TestCreatePage', () => {
   });
 
   it('should test ionViewDidEnterLogic', () => {
-    // spyOn(firebaseLogsService, 'setScreenName');
-    // component.ionViewDidEnter();
-    // expect(firebaseLogsService.setScreenName).toHaveBeenCalled();
+    component.ionViewDidEnter();
+    expect(analyticsService.setCurrentPage).toHaveBeenCalledWith(
+      ANALYTICS_SCREEN_NAMES.TEST_OVERVIEW
+    );
   });
 
   it('should say either a test is abandoned or not', () => {
@@ -407,28 +422,52 @@ describe('Component: TestCreatePage', () => {
     expect(navCtrl.push).not.toHaveBeenCalled();
   });
 
-  it('should test firebase logging when adding a test type', () => {
-    // component.addVehicleTest(vehicleService.createVehicle(vehicle));
-    // expect(firebaseLogsService.add_test_type_time.add_test_type_start_time).toBeTruthy();
+  it('should set duration for adding a test type', () => {
+    const dateNow: number = 1620242516913;
+    spyOn(durationService, 'setDuration');
+    spyOn(Date, 'now').and.returnValue(dateNow);
+
+    component.addVehicleTest(vehicleService.createVehicle(vehicle));
+    expect(durationService.setDuration).toHaveBeenCalledWith(
+      { start: dateNow },
+      DURATION_TYPE[DURATION_TYPE.TEST_TYPE]
+    );
   });
 
-  it('should test firebase logging when removing a test type', () => {
-    // spyOn(firebaseLogsService, 'logEvent');
-    // component.completedFields = {};
-    // component.removeVehicleTest(vehicleService.createVehicle(vehicle), ADDED_VEHICLE_TEST);
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalled();
+  it('should track log event when removing a test type', async () => {
+    component.completedFields = {};
+    await component.removeVehicleTest(vehicleService.createVehicle(vehicle), ADDED_VEHICLE_TEST);
+
+    expect(analyticsService.logEvent).toHaveBeenCalledWith({
+      category: ANALYTICS_EVENT_CATEGORIES.TEST_TYPES,
+      event: ANALYTICS_EVENTS.REMOVE_TEST_TYPE,
+      label: ANALYTICS_LABEL.TEST_TYPE_NAME
+    });
+
+    const key = Object.keys(ANALYTICS_LABEL).indexOf('TEST_TYPE_NAME') + 1;
+    expect(analyticsService.addCustomDimension).toHaveBeenCalledWith(
+      key,
+      ADDED_VEHICLE_TEST.testTypeName
+    );
   });
 
   it('should test onOdometer logic', () => {
+    const dateNow: number = 1620242516913;
+    spyOn(durationService, 'setDuration');
+    spyOn(Date, 'now').and.returnValue(dateNow);
+
     let newTest = testService.createTest();
     let newVehicle = vehicleService.createVehicle(vehicle);
     newTest.vehicles.push(newVehicle);
     component.testData = newTest;
+
     component.onOdometer(0);
+
+    expect(durationService.setDuration).toHaveBeenCalledWith(
+      { start: dateNow },
+      DURATION_TYPE[DURATION_TYPE.ODOMETER_READING]
+    );
     expect(modalctrl.create).toHaveBeenCalled();
-    // expect(
-    //   firebaseLogsService.add_odometer_reading_time.add_odometer_reading_start_time
-    // ).toBeTruthy();
   });
 
   it('should test onVehicleCategory logic', () => {
@@ -452,18 +491,33 @@ describe('Component: TestCreatePage', () => {
     expect(component.errorIncomplete).toBeFalsy();
   });
 
-  it('should check if logEvent was called', () => {
-    // spyOn(firebaseLogsService, 'logEvent');
-    // let vehicle = VehicleDataMock.VehicleData;
-    // vehicle.countryOfRegistration = '';
-    // component.logMissingFields(vehicle);
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalled();
-    // vehicle.countryOfRegistration = 'gb';
-    // vehicle.euVehicleCategory = 'something';
-    // vehicle.odometerReading = '1233';
-    // component.logMissingFields(vehicle);
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalled();
+  it('should track log event for missing fields', async () => {
+    let vehicle = VehicleDataMock.VehicleData;
+    vehicle.countryOfRegistration = '';
+    await component.logMissingFields(vehicle);
+    expectedCheck(ANALYTICS_VALUE.COUNTRY_OF_REGISTRATION);
+
+    vehicle.countryOfRegistration = 'gb';
+    vehicle.euVehicleCategory = '';
+    await component.logMissingFields(vehicle);
+    expectedCheck(ANALYTICS_VALUE.EU_VEHICLE_CATEGORY);
+
+    vehicle.countryOfRegistration = 'gb';
+    vehicle.euVehicleCategory = 'something';
+    vehicle.odometerReading = '';
+    await component.logMissingFields(vehicle);
+    expectedCheck(ANALYTICS_VALUE.ODOMETER_READING);
   });
+
+  function expectedCheck(value: string) {
+    expect(analyticsService.logEvent).toHaveBeenCalledWith({
+      category: ANALYTICS_EVENT_CATEGORIES.REVIEWS,
+      event: ANALYTICS_EVENTS.TEST_REVIEW_UNSUCCESSFUL,
+      label: ANALYTICS_LABEL.MISSING_MADATORY_FIELD
+    });
+    const key = Object.keys(ANALYTICS_LABEL).indexOf('MISSING_MADATORY_FIELD') + 1;
+    expect(analyticsService.addCustomDimension).toHaveBeenCalledWith(key, value);
+  }
 
   it('should test getCountryStringToBeDisplayed', () => {
     spyOn(commonFuncService, 'getCountryStringToBeDisplayed');

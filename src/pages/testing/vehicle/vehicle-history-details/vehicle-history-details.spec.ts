@@ -8,27 +8,29 @@ import { CommonFunctionsService } from '../../../../providers/utils/common-funct
 import { PipesModule } from '../../../../pipes/pipes.module';
 import { TestResultModel } from '../../../../models/tests/test-result.model';
 import { TestResultsHistoryDataMock } from '../../../../assets/data-mocks/test-results-history-data.mock';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
 import { AppService } from '../../../../providers/global/app.service';
 import { AppServiceMock } from '../../../../../test-config/services-mocks/app-service.mock';
 import { TestTypeService } from '../../../../providers/test-type/test-type.service';
 import { TestTypeServiceMock } from '../../../../../test-config/services-mocks/test-type-service.mock';
-import { DEFICIENCY_CATEGORY } from '../../../../app/app.enums';
+import { ANALYTICS_SCREEN_NAMES, DEFICIENCY_CATEGORY } from '../../../../app/app.enums';
 import { DefectDetailsModel } from '../../../../models/defects/defect-details.model';
 import { MOCK_UTILS } from '../../../../../test-config/mocks/mocks.utils';
+import { AnalyticsService } from '../../../../providers/global';
 
 describe('Component: VehicleHistoryDetailsPage', () => {
   let comp: VehicleHistoryDetailsPage;
   let fixture: ComponentFixture<VehicleHistoryDetailsPage>;
   let navCtrl: NavController;
   let commonFunctionsService: CommonFunctionsService;
-  // let firebaseLogsService: FirebaseLogsService;
   let viewCtrl: ViewController;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   const defects: DefectDetailsModel[] = [MOCK_UTILS.mockDefectsDetails()];
 
   beforeEach(async(() => {
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', ['setCurrentPage']);
+
     TestBed.configureTestingModule({
       declarations: [VehicleHistoryDetailsPage],
       imports: [IonicModule.forRoot(VehicleHistoryDetailsPage), PipesModule],
@@ -38,7 +40,7 @@ describe('Component: VehicleHistoryDetailsPage', () => {
         { provide: NavParams, useClass: NavParamsMock },
         { provide: ViewController, useClass: ViewControllerMock },
         { provide: TestTypeService, useClass: TestTypeServiceMock },
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy },
         { provide: AppService, useClass: AppServiceMock }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
@@ -51,7 +53,7 @@ describe('Component: VehicleHistoryDetailsPage', () => {
     navCtrl = TestBed.get(NavController);
     viewCtrl = TestBed.get(ViewController);
     commonFunctionsService = TestBed.get(CommonFunctionsService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
     comp.testIndex = 0;
     comp.testTypeIndex = 0;
     comp.testResultHistory = TestResultsHistoryDataMock.TestResultHistoryData;
@@ -72,9 +74,10 @@ describe('Component: VehicleHistoryDetailsPage', () => {
   });
 
   it('should test ionViewDidEnterLogic', () => {
-    // spyOn(firebaseLogsService, 'setScreenName');
-    // comp.ionViewDidEnter();
-    // expect(firebaseLogsService.setScreenName).toHaveBeenCalled();
+    comp.ionViewDidEnter();
+    expect(analyticsService.setCurrentPage).toHaveBeenCalledWith(
+      ANALYTICS_SCREEN_NAMES.VEHICLE_TEST_HISTORY_DETAILS
+    );
   });
 
   it('should return the correct color', () => {

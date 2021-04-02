@@ -7,11 +7,10 @@ import {
   TEST_TYPE_RESULTS,
   TEST_REPORT_STATUSES,
   VEHICLE_TYPE,
-  FIREBASE_SCREEN_NAMES
+  ANALYTICS_SCREEN_NAMES
 } from '../../../../app/app.enums';
 import { TestResultModel } from '../../../../models/tests/test-result.model';
-import { TestTypeModel } from '../../../../models/tests/test-type.model';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
+import { AnalyticsService } from '../../../../providers/global';
 
 @IonicPage()
 @Component({
@@ -31,9 +30,9 @@ export class VehicleHistoryPage {
     public navCtrl: NavController,
     public navParams: NavParams,
     public viewCtrl: ViewController,
-    public commonFunc: CommonFunctionsService
-  ) // private firebaseLogsService: FirebaseLogsService
-  {
+    public commonFunc: CommonFunctionsService,
+    private analyticsService: AnalyticsService
+  ) {
     this.vehicleData = navParams.get('vehicleData');
     this.testResultHistory = navParams.get('testResultsHistory');
   }
@@ -50,7 +49,7 @@ export class VehicleHistoryPage {
   }
 
   ionViewDidEnter() {
-    // this.firebaseLogsService.setScreenName(FIREBASE_SCREEN_NAMES.VEHICLE_TEST_HISTORY);
+    this.analyticsService.setCurrentPage(ANALYTICS_SCREEN_NAMES.VEHICLE_TEST_HISTORY);
   }
 
   showTestDetails(testIndex: number, testTypeIndex: number): void {

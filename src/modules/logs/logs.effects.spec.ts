@@ -4,7 +4,6 @@ import { Network } from '@ionic-native/network';
 import { NetworkMock, PlatformMock } from 'ionic-mocks';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { provideMockActions } from '@ngrx/effects/testing';
-
 import { Actions } from '@ngrx/effects';
 import { Observable } from 'rxjs/Observable';
 import { empty } from 'rxjs/observable/empty';

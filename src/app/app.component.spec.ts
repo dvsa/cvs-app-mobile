@@ -9,16 +9,15 @@ import { MobileAccessibility } from '@ionic-native/mobile-accessibility';
 import { Network } from '@ionic-native/network';
 import { Store } from '@ngrx/store';
 import { EventsMock, SplashScreenMock, StatusBarMock, NetworkMock } from 'ionic-mocks';
+
 import { MyApp } from './app.component';
 import { StorageService } from '../providers/natives/storage.service';
 import { StorageServiceMock } from '../../test-config/services-mocks/storage-service.mock';
-import { AppService, SyncService, NetworkService } from '../providers/global';
+import { AppService, SyncService, AnalyticsService, NetworkService } from '../providers/global';
 import { VisitService } from '../providers/visit/visit.service';
 import { AppServiceMock } from '../../test-config/services-mocks/app-service.mock';
 import { VisitServiceMock } from '../../test-config/services-mocks/visit-service.mock';
 import { AuthenticationService } from '../providers/auth';
-// import { FirebaseLogsService } from '../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../test-config/services-mocks/firebaseLogsService.mock';
 import { ActivityService } from '../providers/activity/activity.service';
 import { ActivityServiceMock } from '../../test-config/services-mocks/activity-service.mock';
 import { STORAGE, PAGE_NAMES, CONNECTION_STATUS } from './app.enums';
@@ -40,9 +39,10 @@ describe('Component: Root', () => {
   let visitService;
   let screenOrientation: ScreenOrientation;
   let screenOrientationSpy: any;
-  // let firebaseLogsService: FirebaseLogsService;
   let authenticationService: AuthenticationService;
   let authenticationSpy: any;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
   let networkService: NetworkService;
 
   beforeEach(async(() => {
@@ -61,6 +61,11 @@ describe('Component: Root', () => {
 
     screenOrientationSpy = jasmine.createSpyObj('ScreenOrientation', ['lock']);
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'addCustomDimension'
+    ]);
+
     TestBed.configureTestingModule({
       declarations: [MyApp],
       imports: [BrowserModule, HttpClientModule, IonicModule.forRoot(MyApp)],
@@ -75,7 +80,7 @@ describe('Component: Root', () => {
         { provide: Network, useFactory: () => NetworkMock.instance('wifi') },
         { provide: SplashScreen, useFactory: () => SplashScreenMock.instance() },
         { provide: ScreenOrientation, useValue: screenOrientationSpy },
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy },
         { provide: ActivityService, useClass: ActivityServiceMock },
         { provide: VisitService, useClass: VisitServiceMock },
         { provide: SyncService, useValue: syncServiceSpy },
@@ -97,7 +102,7 @@ describe('Component: Root', () => {
     visitService = TestBed.get(VisitService);
     activityService = TestBed.get(ActivityService);
     screenOrientation = TestBed.get(ScreenOrientation);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
     logProvider = TestBed.get(LogsProvider);
     networkService = TestBed.get(NetworkService);
   });

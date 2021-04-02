@@ -10,11 +10,14 @@ import { PreparerService } from '../../../../providers/preparer/preparer.service
 import { TestModel } from '../../../../models/tests/test.model';
 import {
   APP_STRINGS,
-  FIREBASE,
-  FIREBASE_SCREEN_NAMES,
   PAGE_NAMES,
   TESTER_ROLES,
-  VEHICLE_TYPE
+  VEHICLE_TYPE,
+  ANALYTICS_SCREEN_NAMES,
+  DURATION_TYPE,
+  ANALYTICS_EVENTS,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_LABEL
 } from '../../../../app/app.enums';
 import { VehicleService } from '../../../../providers/vehicle/vehicle.service';
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
@@ -22,9 +25,8 @@ import { PreparersReferenceDataModel } from '../../../../models/reference-data-m
 import { TestService } from '../../../../providers/test/test.service';
 import { VisitService } from '../../../../providers/visit/visit.service';
 import { AuthenticationService } from '../../../../providers/auth/authentication/authentication.service';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
 import { CommonFunctionsService } from '../../../../providers/utils/common-functions';
-import { AppService } from '../../../../providers/global';
+import { AppService, AnalyticsService, DurationService } from '../../../../providers/global';
 
 @IonicPage()
 @Component({
@@ -52,7 +54,8 @@ export class AddPreparerPage implements OnInit {
     private viewCtrl: ViewController,
     private testReportService: TestService,
     private authenticationService: AuthenticationService,
-    // private firebaseLogsService: FirebaseLogsService,
+    private analyticsService: AnalyticsService,
+    private durationService: DurationService,
     private commonFunc: CommonFunctionsService,
     public appService: AppService
   ) {
@@ -88,7 +91,7 @@ export class AddPreparerPage implements OnInit {
   }
 
   ionViewDidEnter() {
-    // this.firebaseLogsService.setScreenName(FIREBASE_SCREEN_NAMES.ENTER_PREPARER);
+    this.analyticsService.setCurrentPage(ANALYTICS_SCREEN_NAMES.ENTER_PREPARER);
   }
 
   checkForMatch(inputValue: string, expectedValue: string): boolean {
@@ -170,7 +173,8 @@ export class AddPreparerPage implements OnInit {
         {
           text: !showSearchAgain ? APP_STRINGS.CONFIRM : APP_STRINGS.CONTINUE,
           handler: () => {
-            this.logIntoFirebase();
+            this.trackPrepareConfirmation();
+
             if (
               !this.visitService.visit.tests.length ||
               this.visitService.getLatestTest().endTime
@@ -198,21 +202,28 @@ export class AddPreparerPage implements OnInit {
     this.searchValue = value.length > 9 ? value.substring(0, 9) : value;
   }
 
-  logIntoFirebase() {
-    // this.firebaseLogsService.confirm_preparer_time.confirm_preparer_end_time = Date.now();
-    // this.firebaseLogsService.confirm_preparer_time.confirm_preparer_time_taken = this.firebaseLogsService.differenceInSeconds(
-    //   this.firebaseLogsService.confirm_preparer_time.confirm_preparer_start_time,
-    //   this.firebaseLogsService.confirm_preparer_time.confirm_preparer_end_time
-    // );
-    // this.firebaseLogsService.logEvent(
-    //   FIREBASE.CONFIRM_PREPARER_TIME_TAKEN,
-    //   FIREBASE.CONFIRM_PREPARER_START_TIME,
-    //   this.firebaseLogsService.confirm_preparer_time.confirm_preparer_start_time.toString(),
-    //   FIREBASE.CONFIRM_PREPARER_END_TIME,
-    //   this.firebaseLogsService.confirm_preparer_time.confirm_preparer_end_time.toString(),
-    //   FIREBASE.CONFIRM_PREPARER_TIME_TAKEN,
-    //   this.firebaseLogsService.confirm_preparer_time.confirm_preparer_time_taken
-    // );
+  private async trackPrepareConfirmation() {
+    const type: string = DURATION_TYPE[DURATION_TYPE.CONFIRM_PREPARER];
+    this.durationService.setDuration({ end: Date.now() }, type);
+    const duration = this.durationService.getDuration(type);
+    const takenDuration = this.durationService.getTakenDuration(duration);
+
+    await this.trackPrepareDuration('CONFIRM_PREPARER_START_TIME', duration.start.toString());
+    await this.trackPrepareDuration('CONFIRM_PREPARER_END_TIME', duration.end.toString());
+    await this.trackPrepareDuration('CONFIRM_PREPARER_TIME_TAKEN', takenDuration.toString());
+  }
+
+  private async trackPrepareDuration(label: string, value: string) {
+    await this.analyticsService.logEvent({
+      category: ANALYTICS_EVENT_CATEGORIES.DURATION,
+      event: ANALYTICS_EVENTS.CONFIRM_PREPARER_TIME_TAKEN,
+      label: ANALYTICS_LABEL[label]
+    });
+
+    await this.analyticsService.addCustomDimension(
+      Object.keys(ANALYTICS_LABEL).indexOf(label) + 1,
+      value
+    );
   }
 
   autoPopulatePreparerInput(vehicles) {

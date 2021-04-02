@@ -9,11 +9,14 @@ import { VehicleDataMock } from '../../../../assets/data-mocks/vehicle-data.mock
 import { PipesModule } from '../../../../pipes/pipes.module';
 import { TestResultsHistoryDataMock } from '../../../../assets/data-mocks/test-results-history-data.mock';
 import { TestTypeArrayDataMock } from '../../../../assets/data-mocks/test-type-array-data.mock';
-import { TECH_RECORD_STATUS, VEHICLE_TYPE } from '../../../../app/app.enums';
+import {
+  ANALYTICS_SCREEN_NAMES,
+  TECH_RECORD_STATUS,
+  VEHICLE_TYPE
+} from '../../../../app/app.enums';
 import { VehicleHistoryPage } from './vehicle-history';
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
+import { AnalyticsService } from '../../../../providers/global';
 
 describe('Component: VehicleHistoryPage', () => {
   let comp: VehicleHistoryPage;
@@ -21,13 +24,16 @@ describe('Component: VehicleHistoryPage', () => {
   let navCtrl: NavController;
   let navParams: NavParams;
   let commonFunctionsService: any;
-  // let firebaseLogsService: FirebaseLogsService;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   let testResultsHistory: any = TestResultsHistoryDataMock.TestResultHistoryData;
   let vehicleData: VehicleModel = VehicleDataMock.VehicleData;
   let testTypeArray = TestTypeArrayDataMock.TestTypeArrayData;
 
   beforeEach(async(() => {
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', ['setCurrentPage']);
+
     TestBed.configureTestingModule({
       declarations: [VehicleHistoryPage],
       imports: [IonicModule.forRoot(VehicleHistoryPage), PipesModule],
@@ -35,24 +41,18 @@ describe('Component: VehicleHistoryPage', () => {
         NavController,
         CommonFunctionsService,
         { provide: NavParams, useClass: NavParamsMock },
-        { provide: ViewController, useClass: ViewControllerMock }
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock }
+        { provide: ViewController, useClass: ViewControllerMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     });
-  }));
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(VehicleHistoryPage);
     comp = fixture.componentInstance;
     navCtrl = TestBed.get(NavController);
     navParams = TestBed.get(NavParams);
+    analyticsService = TestBed.get(AnalyticsService);
     commonFunctionsService = TestBed.get(CommonFunctionsService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
-  });
-
-  beforeEach(() => {
-    const navParams = fixture.debugElement.injector.get(NavParams);
 
     navParams.get = jasmine.createSpy('get').and.callFake((param) => {
       let params = {
@@ -61,7 +61,7 @@ describe('Component: VehicleHistoryPage', () => {
       };
       return params[param];
     });
-  });
+  }));
 
   beforeEach(() => {
     comp.vehicleData = navParams.get('vehicleData');
@@ -82,9 +82,11 @@ describe('Component: VehicleHistoryPage', () => {
   });
 
   it('should test ionViewDidEnterLogic', () => {
-    // spyOn(firebaseLogsService, 'setScreenName');
-    // comp.ionViewDidEnter();
-    // expect(firebaseLogsService.setScreenName).toHaveBeenCalled();
+    comp.ionViewDidEnter();
+
+    expect(analyticsService.setCurrentPage).toHaveBeenCalledWith(
+      ANALYTICS_SCREEN_NAMES.VEHICLE_TEST_HISTORY
+    );
   });
 
   it('should create an array called testTypeArray if testHistory exists', () => {

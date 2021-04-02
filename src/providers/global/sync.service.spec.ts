@@ -14,13 +14,13 @@ import { TestStationDataMock } from '../../assets/data-mocks/reference-data-mock
 import { TestTypesReferenceDataMock } from '../../assets/data-mocks/reference-data-mocks/test-types.mock';
 import { AppService } from './app.service';
 import { AppServiceMock } from '../../../test-config/services-mocks/app-service.mock';
-// import { Firebase } from '@ionic-native/firebase';
 import { AppVersion } from '@ionic-native/app-version';
 import { LogsProvider } from '../../modules/logs/logs.service';
-import { APP_UPDATE } from '../../app/app.enums';
+import { ANALYTICS_EVENT_CATEGORIES, ANALYTICS_EVENTS, APP_UPDATE } from '../../app/app.enums';
 import { VERSION_POPUP_MSG } from '../../app/app.constants';
 import { AuthenticationService } from '../auth';
 import { AuthenticationServiceMock } from '../../../test-config/services-mocks/authentication-service.mock';
+import { AnalyticsService } from './analytics.service';
 
 describe('Provider: SyncService', () => {
   let syncService: SyncService;
@@ -35,6 +35,9 @@ describe('Provider: SyncService', () => {
   let appVersion: AppVersion;
   let logProvider: LogsProvider;
   let logProviderSpy: any;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
+
   let latestAppVersion = {
     body: {
       'mobile-app': {
@@ -63,12 +66,14 @@ describe('Provider: SyncService', () => {
       dispatchLog: () => true
     });
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', ['logEvent']);
+
     TestBed.configureTestingModule({
       providers: [
-        // Firebase,
         SyncService,
         OpenNativeSettings,
         CallNumber,
+        { provide: AnalyticsService, useValue: analyticsServiceSpy },
         { provide: AppService, useClass: AppServiceMock },
         { provide: HTTPService, useValue: httpServiceSpy },
         { provide: StorageService, useValue: storageServiceSpy },
@@ -90,6 +95,7 @@ describe('Provider: SyncService', () => {
     appService = TestBed.get(AppService);
     appVersion = TestBed.get(AppVersion);
     logProvider = TestBed.get(LogsProvider);
+    analyticsService = TestBed.get(AnalyticsService);
   });
 
   afterEach(() => {
@@ -145,6 +151,19 @@ describe('Provider: SyncService', () => {
 
     return syncService.checkForUpdate().then(() => {
       expect(alertCtrl.create).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  it('should track event for an updated app', async () => {
+    const currentVer = 'v2.2.0';
+    const latestAppVer = 'v2.2.0';
+    syncService.isVersionCheckedError = false;
+
+    await syncService.trackUpdatedApp(currentVer, latestAppVer);
+
+    expect(analyticsService.logEvent).toHaveBeenCalledWith({
+      category: ANALYTICS_EVENT_CATEGORIES.APP_UPDATE,
+      event: ANALYTICS_EVENTS.OS_UPDATE
     });
   });
 });

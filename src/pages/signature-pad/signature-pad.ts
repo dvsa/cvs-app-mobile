@@ -10,15 +10,23 @@ import { SignaturePad } from 'angular2-signaturepad/signature-pad';
 import { ScreenOrientation } from '@ionic-native/screen-orientation';
 import { CallNumber } from '@ionic-native/call-number';
 import { OpenNativeSettings } from '@ionic-native/open-native-settings';
-// import { Firebase } from '@ionic-native/firebase';
 
-import { APP_STRINGS, LOCAL_STORAGE, SIGNATURE_STATUS } from '../../app/app.enums';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  ANALYTICS_VALUE,
+  APP_STRINGS,
+  LOCAL_STORAGE,
+  SIGNATURE_STATUS
+} from '../../app/app.enums';
 import { SignaturePopoverComponent } from '../../components/signature-popover/signature-popover';
 import { SignatureService } from '../../providers/signature/signature.service';
 import { AppService } from '../../providers/global/app.service';
 import { default as AppConfig } from '../../../config/application.hybrid';
 import { AuthenticationService } from '../../providers/auth/authentication/authentication.service';
 import { LogsProvider } from '../../modules/logs/logs.service';
+import { AnalyticsService } from '../../providers/global';
 
 @IonicPage()
 @Component({
@@ -47,7 +55,7 @@ export class SignaturePadPage implements OnInit {
     private screenOrientation: ScreenOrientation,
     private openNativeSettings: OpenNativeSettings,
     private signatureService: SignatureService,
-    // private firebase: Firebase,
+    private analyticsService: AnalyticsService,
     private authenticationService: AuthenticationService,
     private callNumber: CallNumber,
     private logProvider: LogsProvider
@@ -126,10 +134,8 @@ export class SignaturePadPage implements OnInit {
                   timestamp: Date.now()
                 });
 
-                // this.firebase.logEvent('test_error', {
-                //   content_type: 'error',
-                //   item_id: 'Saving signature failed'
-                // });
+                this.trackErrorOnSavingSignature(ANALYTICS_VALUE.SAVING_SIGNATURE_FAILED);
+
                 this.showConfirm();
               }
             );
@@ -138,6 +144,14 @@ export class SignaturePadPage implements OnInit {
       ]
     });
     CONFIRM_ALERT.present();
+  }
+
+  private async trackErrorOnSavingSignature(value: string) {
+    await this.analyticsService.logEvent({
+      category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+      event: ANALYTICS_EVENTS.TEST_ERROR,
+      label: value
+    });
   }
 
   /**

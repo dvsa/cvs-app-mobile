@@ -5,15 +5,16 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { TestStationService } from '../../../providers/test-station/test-station.service';
 import { TestStationReferenceDataModel } from '../../../models/reference-data-models/test-station.model';
 import { NavControllerMock } from 'ionic-mocks';
-// import { FirebaseLogsService } from '../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../test-config/services-mocks/firebaseLogsService.mock';
+import { AnalyticsService } from '../../../providers/global';
+import { ANALYTICS_SCREEN_NAMES } from '../../../app/app.enums';
 
 describe('Component: TestStationSearchPage', () => {
   let comp: TestStationSearchPage;
   let fixture: ComponentFixture<TestStationSearchPage>;
   let testStationService: TestStationService;
   let navCtrl: NavController;
-  // let firebaseLogsService: FirebaseLogsService;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   beforeEach(async(() => {
     const testStationServiceSpy = jasmine.createSpyObj('TestStationService', [
@@ -21,13 +22,15 @@ describe('Component: TestStationSearchPage', () => {
       'sortAndSearchTestStation'
     ]);
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', ['setCurrentPage']);
+
     TestBed.configureTestingModule({
       declarations: [TestStationSearchPage],
       imports: [IonicModule.forRoot(TestStationSearchPage)],
       providers: [
         { provide: NavController, useFactory: () => NavControllerMock.instance() },
-        { provide: TestStationService, useValue: testStationServiceSpy }
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock }
+        { provide: TestStationService, useValue: testStationServiceSpy },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -38,7 +41,7 @@ describe('Component: TestStationSearchPage', () => {
     comp = fixture.componentInstance;
     testStationService = TestBed.get(TestStationService);
     navCtrl = TestBed.get(NavController);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
   });
 
   afterEach(() => {
@@ -55,9 +58,10 @@ describe('Component: TestStationSearchPage', () => {
   });
 
   it('should test ionViewDidEnterLogic', () => {
-    // spyOn(firebaseLogsService, 'setScreenName');
-    // comp.ionViewDidEnter();
-    // expect(firebaseLogsService.setScreenName).toHaveBeenCalled();
+    comp.ionViewDidEnter();
+    expect(analyticsService.setCurrentPage).toHaveBeenCalledWith(
+      ANALYTICS_SCREEN_NAMES.TEST_STATION_SEARCH
+    );
   });
 
   it('should TestStationService and TestStationSearchPage Component share the same instance', inject(

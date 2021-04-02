@@ -16,10 +16,16 @@ import {
 import { DefectsService } from '../../../../providers/defects/defects.service';
 import { TestTypeModel } from '../../../../models/tests/test-type.model';
 import { TestTypeService } from '../../../../providers/test-type/test-type.service';
-import { APP_STRINGS, DEFICIENCY_CATEGORY } from '../../../../app/app.enums';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
+import {
+  APP_STRINGS,
+  DEFICIENCY_CATEGORY,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL
+} from './../../../../app/app.enums';
 import { ProhibitionClearanceTestTypesData } from '../../../../assets/app-data/test-types-data/prohibition-clearance-test-types.data';
 import { TestTypesFieldsMetadata } from '../../../../assets/app-data/test-types-data/test-types-fields.metadata';
+import { AnalyticsService } from '../../../../providers/global';
 
 @IonicPage()
 @Component({
@@ -50,7 +56,7 @@ export class DefectDetailsPage implements OnInit {
     public viewCtrl: ViewController,
     public defectsService: DefectsService,
     private testTypeService: TestTypeService,
-    // private firebaseLogsService: FirebaseLogsService
+    private analyticsService: AnalyticsService,
     private alertCtrl: AlertController
   ) {
     this.vehicleTest = navParams.get('vehicleTest');
@@ -112,7 +118,7 @@ export class DefectDetailsPage implements OnInit {
     }
 
     if (this.notesChanged) {
-      this.logFirebaseNotesChanged();
+      this.onNotesChanged();
     }
   }
 
@@ -205,11 +211,16 @@ export class DefectDetailsPage implements OnInit {
     this.navCtrl.pop();
   }
 
-  private logFirebaseNotesChanged() {
-    // this.firebaseLogsService.logEvent(
-    //   FIREBASE_DEFECTS.DEFECT_NOTES_USAGE,
-    //   FIREBASE_DEFECTS.DEFICIENCY_REFERENCE,
-    //   this.defect.deficiencyRef
-    // );
+  private async onNotesChanged() {
+    await this.analyticsService.logEvent({
+      category: ANALYTICS_EVENT_CATEGORIES.DEFECTS,
+      event: ANALYTICS_EVENTS.DEFECT_NOTES_USAGE,
+      label: ANALYTICS_LABEL.DEFICIENCY_REFERENCE
+    });
+
+    await this.analyticsService.addCustomDimension(
+      Object.keys(ANALYTICS_LABEL).indexOf('DEFICIENCY_REFERENCE') + 1,
+      this.defect.deficiencyRef
+    );
   }
 }

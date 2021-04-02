@@ -10,7 +10,8 @@ const {
   APP_KEY_PHONE_NUMBER,
   SENTRY_DSN,
   UNAUTH_LOGS_API_KEY,
-  URL_LATEST_VERSION
+  URL_LATEST_VERSION,
+  GOOGLE_ANALYTICS_ID
 } = process.env;
 
 const isProduction = ENVIRONMENT === 'production';
@@ -31,5 +32,8 @@ export const hybridConfig = `export default {
   "sentry": {
     "SENTRY_ENV": "${END_ENV}",
     "SENTRY_DSN": "${SENTRY_DSN}",
+  },
+  "ga": {
+    "GOOGLE_ANALYTICS_ID": "${GOOGLE_ANALYTICS_ID}"
   }
 }`;

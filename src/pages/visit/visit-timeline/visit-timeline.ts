@@ -15,23 +15,26 @@ import { VisitService } from '../../../providers/visit/visit.service';
 import { VisitModel } from '../../../models/visit/visit.model';
 import { StateReformingService } from '../../../providers/global/state-reforming.service';
 import {
+  ANALYTICS_SCREEN_NAMES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_LABEL,
+  ANALYTICS_VALUE,
   APP_STRINGS,
   STORAGE,
   TEST_REPORT_STATUSES,
   TEST_TYPE_RESULTS,
   AUTH,
   PAGE_NAMES,
-  FIREBASE,
   VISIT,
   LOG_TYPES,
   VEHICLE_TYPE,
-  FIREBASE_SCREEN_NAMES
+  DURATION_TYPE
 } from '../../../app/app.enums';
 import { StorageService } from '../../../providers/natives/storage.service';
-import { AppService } from '../../../providers/global';
+import { AppService, AnalyticsService, DurationService } from '../../../providers/global';
 import { OpenNativeSettings } from '@ionic-native/open-native-settings';
 import { AuthenticationService } from '../../../providers/auth/authentication/authentication.service';
-// import { FirebaseLogsService } from '../../../providers/firebase-logs/firebase-logs.service';
 import { ActivityModel } from '../../../models/visit/activity.model';
 import { ActivityService } from '../../../providers/activity/activity.service';
 import { FormatVrmPipe } from '../../../pipes/format-vrm/format-vrm.pipe';
@@ -75,7 +78,8 @@ export class VisitTimelinePage implements OnInit, OnDestroy {
     private authenticationService: AuthenticationService,
     private storageService: StorageService,
     private openNativeSettings: OpenNativeSettings,
-    // private firebaseLogsService: FirebaseLogsService,
+    private analyticsService: AnalyticsService,
+    private durationService: DurationService,
     private modalCtrl: ModalController,
     private formatVrmPipe: FormatVrmPipe,
     private logProvider: LogsProvider
@@ -107,7 +111,7 @@ export class VisitTimelinePage implements OnInit, OnDestroy {
   }
 
   ionViewDidEnter() {
-    // this.firebaseLogsService.setScreenName(FIREBASE_SCREEN_NAMES.VISIT_TIMELINE);
+    this.analyticsService.setCurrentPage(ANALYTICS_SCREEN_NAMES.VISIT_TIMELINE);
     // this.waitTimeHandler(); FIXME: Needs to be fixed separately.
   }
 
@@ -174,7 +178,11 @@ export class VisitTimelinePage implements OnInit, OnDestroy {
   }
 
   createNewTestReport(): void {
-    // this.firebaseLogsService.search_vehicle_time.search_vehicle_start_time = Date.now();
+    this.durationService.setDuration(
+      { start: Date.now() },
+      DURATION_TYPE[DURATION_TYPE.SEARCH_VEHICLE]
+    );
+
     let test = this.testReportService.createTest();
     this.navCtrl.push(PAGE_NAMES.VEHICLE_LOOKUP_PAGE, { test: test });
     clearTimeout(this.activityService.waitTimer);
@@ -268,7 +276,11 @@ export class VisitTimelinePage implements OnInit, OnDestroy {
           timestamp: Date.now()
         });
 
-        // this.firebaseLogsService.logEvent(FIREBASE.SUBMIT_VISIT);
+        this.analyticsService.logEvent({
+          category: ANALYTICS_EVENT_CATEGORIES.VISIT,
+          event: ANALYTICS_EVENTS.SUBMIT_VISIT
+        });
+
         // clearTimeout(this.activityService.waitTimer);
 
         return wasVisitAlreadyClosed
@@ -287,11 +299,11 @@ export class VisitTimelinePage implements OnInit, OnDestroy {
           timestamp: Date.now()
         });
 
-        // this.firebaseLogsService.logEvent(
-        //   FIREBASE.TEST_ERROR,
-        //   FIREBASE.ERROR,
-        //   FIREBASE.ENDING_ACTIVITY_FAILED
-        // );
+        this.analyticsService.logEvent({
+          category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+          event: ANALYTICS_EVENTS.TEST_ERROR,
+          label: ANALYTICS_VALUE.ENDING_ACTIVITY_FAILED
+        });
 
         return this.endVisitError$(error);
       })
@@ -352,11 +364,11 @@ export class VisitTimelinePage implements OnInit, OnDestroy {
           timestamp: Date.now()
         });
 
-        // this.firebaseLogsService.logEvent(
-        //   FIREBASE.TEST_ERROR,
-        //   FIREBASE.ERROR,
-        //   FIREBASE.WAIT_ACTIVITY_SUBMISSION_FAILED
-        // );
+        this.analyticsService.logEvent({
+          category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+          event: ANALYTICS_EVENTS.TEST_ERROR,
+          label: ANALYTICS_VALUE.WAIT_ACTIVITY_SUBMISSION_FAILED
+        });
 
         return of(null);
       })
