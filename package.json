@@ -61,7 +61,7 @@
     "@ionic-native/splash-screen": "~4.12.0",
     "@ionic-native/status-bar": "^4.12.2",
     "@ionic-native/wheel-selector": "^4.17.0",
-    "@ionic/storage": "^2.2.0",
+    "@ionic/storage": "^2.3.1",
     "@ngrx/effects": "^5.2.0",
     "@ngrx/store": "^5.2.0",
     "@types/uuidv4": "^2.0.0",
