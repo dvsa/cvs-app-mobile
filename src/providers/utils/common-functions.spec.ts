@@ -122,22 +122,22 @@ describe('Provider: CommonFunctionsService', () => {
     expect(sortedArray[0]['id']).toMatch('1');
   });
 
-  it('should return an array ordered by stringId, order not given', () => {
-    let array = TestTypesReferenceDataMock.TestTypesData;
-    let sortedArray = array.sort(commonFunctionsService.orderByStringId('id'));
-    expect(sortedArray[0]['id']).toMatch('1');
-  });
-
   it('should return array in same order', () => {
     let array = TestTypesReferenceDataMock.TestTypesData;
     let sortedArray = array.sort(commonFunctionsService.orderByStringId('some'));
     expect(sortedArray[0]['id']).toMatch(array[0]['id']);
   });
 
-  it('should return an array ordered by stringId, order given', () => {
+  it('should return an array ordered by "id" in decending order', () => {
     let array = TestTypesReferenceDataMock.TestTypesData;
     let sortedArray = array.sort(commonFunctionsService.orderByStringId('id', 'desc'));
-    expect(sortedArray[0]['id']).toMatch('5');
+    expect(sortedArray[0]['id']).toMatch('11');
+  });
+
+  it('should return an array ordered by "sortId" in ascending order', () => {
+    let array = TestTypesReferenceDataMock.TestTypesData;
+    let sortedArray = array.sort(commonFunctionsService.orderByStringId('sortId'));
+    expect(sortedArray[0]['sortId']).toMatch('1');
   });
 
   it('should make a clone of an given object', () => {

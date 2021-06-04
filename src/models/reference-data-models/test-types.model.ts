@@ -8,6 +8,7 @@ import {
 export interface TestTypesReferenceDataModel {
   id: string;
   name: string;
+  sortId: string;
   testTypeName?: string | null;
   forVehicleType: string[] | VEHICLE_TYPE;
   forVehicleSize: string[] | VEHICLE_SIZE;

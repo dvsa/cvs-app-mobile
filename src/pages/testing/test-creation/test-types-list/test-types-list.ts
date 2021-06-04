@@ -46,14 +46,17 @@ export class TestTypesListPage implements OnInit {
   }
 
   ngOnInit() {
-    if (this.testTypeReferenceData)
+    if (this.testTypeReferenceData) {
       this.testTypeReferenceData = this.testTypeService.orderTestTypesArray(
         this.testTypeReferenceData,
-        'id',
+        'sortId',
         'asc'
       );
+    } else {
+      this.getTestTypeRefByStorage();
+    }
+
     this.backBtn = this.navParams.get('backBtn');
-    this.getTestTypeReferenceData();
     let previousView = this.navCtrl.getPrevious();
     this.firstPage = previousView.id != PAGE_NAMES.TEST_TYPES_LIST_PAGE;
   }
@@ -67,18 +70,16 @@ export class TestTypesListPage implements OnInit {
     }
   }
 
-  getTestTypeReferenceData(): void {
-    if (!this.testTypeReferenceData) {
-      this.testTypeService
-        .getTestTypesFromStorage()
-        .subscribe((data: TestTypesReferenceDataModel[]) => {
-          this.testTypeReferenceData = this.testTypeService.orderTestTypesArray(
-            data,
-            'id',
-            'asc'
-          );
-        });
-    }
+  getTestTypeRefByStorage(): void {
+    this.testTypeService
+      .getTestTypesFromStorage()
+      .subscribe((data: TestTypesReferenceDataModel[]) => {
+        this.testTypeReferenceData = this.testTypeService.orderTestTypesArray(
+          data,
+          'sortId',
+          'asc'
+        );
+      });
   }
 
   selectedItem(testType: TestTypesReferenceDataModel, vehicleData: VehicleModel): void {
