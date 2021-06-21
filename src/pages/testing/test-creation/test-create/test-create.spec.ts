@@ -369,6 +369,22 @@ describe('Component: TestCreatePage', () => {
     expect(component.getTestTypeStatus(vehicle, testType)).toEqual('Edit');
   });
 
+  it('should have "In progress" status if a Specialist test (IVA/Retest) has certificate field incomplete', () => {
+    let testType: TestTypeModel = { ...TestTypeDataModelMock.TestTypeData };
+    let vehicle: VehicleModel = { ...VEHICLE };
+    testType.testTypeId = '130';
+    testType.certificateNumber = '';
+    expect(component.getTestTypeStatus(vehicle, testType)).toEqual('In progress');
+  });
+
+  it('should have "Edit" status if a Specialist test (IVA/Retest) has all fields completed', () => {
+    let testType: TestTypeModel = { ...TestTypeDataModelMock.TestTypeData };
+    let vehicle: VehicleModel = { ...VEHICLE };
+    testType.testTypeId = '130';
+    testType.certificateNumber = '7374348';
+    expect(component.getTestTypeStatus(vehicle, testType)).toEqual('Edit');
+  });
+
   it('should not allow to review a test because not all mandatory fields completed', () => {
     let newTest = testService.createTest();
     let newVehicle = vehicleService.createVehicle(vehicle);

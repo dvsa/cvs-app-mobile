@@ -198,6 +198,7 @@ export class TestCreatePage implements OnInit {
                   testType.testTypeId
                 ) ||
                 this.testTypeService.isSpecialistPartOfCoifTestTypes(testType.testTypeId) ||
+                this.testTypeService.isSpecialistIvaTestAndRetestTestType(testType.testTypeId) ||
                 this.testTypeService.isPsvNotifiableAlterationTestType(testType.testTypeId)) &&
                 input.testTypePropertyName === TEST_TYPE_INPUTS.CERTIFICATE_NUMBER)
             ) {
@@ -249,6 +250,15 @@ export class TestCreatePage implements OnInit {
               ) {
                 isInProgress = false;
                 testType.completionStatus = TEST_COMPLETION_STATUS.EDIT;
+              }
+
+              if (
+                this.testTypeService.isSpecialistIvaTestAndRetestTestType(testType.testTypeId) &&
+                input.testTypePropertyName === TEST_TYPE_INPUTS.CERTIFICATE_NUMBER &&
+                !testType.certificateNumber
+              ) {
+                isInProgress = true;
+                testType.completionStatus = TEST_COMPLETION_STATUS.IN_PROGRESS;
               }
             } else {
               if (

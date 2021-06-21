@@ -23,9 +23,9 @@
     <ion-item text-wrap><h2 class="test-type-name">{{vehicleTest.testTypeName}}</h2></ion-item>
 
     <ion-item-group *ngFor="let section of testTypeDetails.sections">
-      <ion-item-divider *ngIf="canDisplaySection(section)"
-        >{{section.sectionName.toUpperCase()}}</ion-item-divider
-      >
+      <ion-item-divider *ngIf="canDisplaySection(section)">
+        {{section.sectionName.toUpperCase()}}
+      </ion-item-divider>
 
       <div *ngFor="let input of section.inputs">
         <button
@@ -121,6 +121,7 @@
             ></ion-input>
           </ion-item>
         </div>
+
         <p
           padding-left
           class="error-incomplete-certificate-number"
@@ -154,10 +155,10 @@
           *ngIf="input.type === testTypeFields.CERTIFICATE_NUMBER_CUSTOM && canDisplaySection(section) && canDisplayInput(input)"
         >
           <ion-row>
-            <ion-col col-2 class="certificateNumberCustom-label"
-              >{{vehicle.techRecord.vehicleType === vehicleTypes.HGV ?
-              tirCertificateNumberPrefixes.GB_V : tirCertificateNumberPrefixes.GB_T}}</ion-col
-            >
+            <ion-col col-2 class="certificateNumberCustom-label">
+              {{vehicle.techRecord.vehicleType === vehicleTypes.HGV ?
+              tirCertificateNumberPrefixes.GB_V : tirCertificateNumberPrefixes.GB_T}}
+            </ion-col>
             <ion-col col-10 class="certificateNumberCustom-input">
               <ion-input
                 [placeholder]="input.placeholder"
@@ -165,7 +166,8 @@
                 [pattern]="patterns.NUMERIC"
                 [(ngModel)]="vehicleTest[input.testTypePropertyName]"
                 (ngModelChange)="certificateNumberInputChange($event)"
-              ></ion-input>
+              >
+              </ion-input>
             </ion-col>
           </ion-row>
         </ion-grid>

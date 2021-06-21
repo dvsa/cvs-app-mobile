@@ -285,7 +285,7 @@ describe('Component: CompleteTestPage', () => {
     section.inputs[0].type = TEST_TYPE_FIELDS.CERTIFICATE_NUMBER_CUSTOM;
     expect(comp.canDisplaySection(section)).toBeFalsy();
 
-    comp.vehicleTest.testTypeId = '125';
+    comp.vehicleTest.testTypeId = '133'; // specialist test only
     section.inputs[0].type = TEST_TYPE_FIELDS.CERTIFICATE_NUMBER;
     expect(comp.canDisplaySection(section)).toBeFalsy();
 
@@ -294,17 +294,51 @@ describe('Component: CompleteTestPage', () => {
 
     comp.vehicleTest.testTypeId = '38';
     expect(comp.canDisplaySection(section)).toBeFalsy();
+
+    comp.vehicleTest.testTypeId = '130'; //specialist IVA/Retest
+    comp.vehicleTest.testResult = TEST_TYPE_RESULTS.FAIL;
+    section.inputs[0].type = TEST_TYPE_FIELDS.CERTIFICATE_NUMBER;
+    expect(comp.canDisplaySection(section)).toBeTruthy();
   });
 
-  it('should tell if an input can be displayed', () => {
-    comp.vehicleTest = navParams.get('vehicleTest');
-    comp.testTypeDetails = comp.getTestTypeDetails();
-    let input = TEST_TYPES_METADATA.sections[2].inputs[2];
-    comp.completedFields = {};
-    comp.completedFields.seatbeltInstallationCheckDate = false;
-    expect(comp.canDisplayInput(input)).toBeTruthy();
-    comp.completedFields.seatbeltInstallationCheckDate = true;
-    expect(comp.canDisplayInput(input)).toBeFalsy();
+  describe('canDisplayInput', () => {
+    let inputMeta;
+
+    beforeEach(() => {
+      comp.vehicleTest = navParams.get('vehicleTest');
+      comp.testTypeDetails = comp.getTestTypeDetails();
+      inputMeta = TEST_TYPES_METADATA.sections[2].inputs[2];
+      comp.completedFields = {
+        seatbeltInstallationCheckDate: false
+      };
+    });
+
+    it('should be truthy when seatbeltInstallationCheckDate is false', () => {
+      expect(comp.canDisplayInput(inputMeta)).toBeTruthy();
+    });
+
+    it('should be falsy when seatbeltInstallationCheckDate is true', () => {
+      comp.completedFields.seatbeltInstallationCheckDate = true;
+      expect(comp.canDisplayInput(inputMeta)).toBeFalsy();
+    });
+
+    it('should show Certificate field when test fail for specialist IVA or Retest', () => {
+      comp.vehicleTest.testTypeId = '130';
+      comp.completedFields = {};
+      inputMeta = TEST_TYPES_METADATA.sections[1].inputs[1];
+      inputMeta = {
+        ...inputMeta,
+        type: TEST_TYPE_FIELDS.CERTIFICATE_NUMBER,
+        dependentOn: [
+          {
+            testTypePropertyName: 'testResult',
+            valueToBeDifferentFrom: TEST_TYPE_RESULTS.FAIL
+          }
+        ]
+      };
+
+      expect(comp.canDisplayInput(inputMeta)).toBeTruthy();
+    });
   });
 
   it('should create a handler for a DDL button', () => {
