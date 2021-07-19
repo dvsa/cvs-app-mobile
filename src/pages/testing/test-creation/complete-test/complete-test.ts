@@ -318,6 +318,16 @@ export class CompleteTestPage implements OnInit {
     ) {
       return false;
     }
+
+    // Specialist Test IVA/Retest and vehicle failed.
+    if (
+      this.testTypeService.isSpecialistIvaTestAndRetestTestType(this.vehicleTest.testTypeId) &&
+      this.vehicleTest.testResult === TEST_TYPE_RESULTS.FAIL &&
+      section.inputs[0].type === TEST_TYPE_FIELDS.CERTIFICATE_NUMBER
+    ) {
+      return true;
+    }
+
     // -----TO HERE-----
     // for Specialist test-types with certificate number and Notifiable Alteration for PSVs
     // -----FROM HERE-----
@@ -363,7 +373,12 @@ export class CompleteTestPage implements OnInit {
     }
     if (input.dependentOn && input.dependentOn.length) {
       for (let dep of input.dependentOn) {
-        if (this.vehicleTest[dep.testTypePropertyName] === dep.valueToBeDifferentFrom) {
+        if (
+          !this.testTypeService.isSpecialistIvaTestAndRetestTestType(
+            this.vehicleTest.testTypeId
+          ) &&
+          this.vehicleTest[dep.testTypePropertyName] === dep.valueToBeDifferentFrom
+        ) {
           return false;
         }
       }
