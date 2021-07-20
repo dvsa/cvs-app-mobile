@@ -3,14 +3,12 @@ import { async, ComponentFixture, inject, TestBed } from '@angular/core/testing'
 import { IonicModule, NavController, NavParams, ViewController } from 'ionic-angular';
 import { NavParamsMock } from '../../../../../test-config/ionic-mocks/nav-params.mock';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { StorageService } from '../../../../providers/natives/storage.service';
 import { TestTypeService } from '../../../../providers/test-type/test-type.service';
 import { TestTypesReferenceDataMock } from '../../../../assets/data-mocks/reference-data-mocks/test-types.mock';
 import { TestTypesReferenceDataModel } from '../../../../models/reference-data-models/test-types.model';
 import { PipesModule } from '../../../../pipes/pipes.module';
 import { TechRecordDataMock } from '../../../../assets/data-mocks/tech-record-data.mock';
 import { VehicleService } from '../../../../providers/vehicle/vehicle.service';
-import { TestTypeServiceMock } from '../../../../../test-config/services-mocks/test-type-service.mock';
 import { CommonFunctionsService } from '../../../../providers/utils/common-functions';
 import { VehicleTechRecordModel } from '../../../../models/vehicle/tech-record.model';
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
@@ -28,6 +26,7 @@ import { AuthenticationService } from '../../../../providers/auth/authentication
 import { AuthenticationServiceMock } from '../../../../../test-config/services-mocks/authentication-service.mock';
 import { AnalyticsService, DurationService } from '../../../../providers/global';
 import { Duration } from '../../../../models/duration.model';
+import { of } from 'rxjs/observable/of';
 
 describe('Component: TestTypesListPage', () => {
   let comp: TestTypesListPage;
@@ -36,6 +35,7 @@ describe('Component: TestTypesListPage', () => {
   let navParams: NavParams;
   let viewCtrl: ViewController;
   let testTypeService: TestTypeService;
+  let testTypeServiceSpy;
   let vehicleService: VehicleService;
   let storageServiceSpy: any;
   let vehicleServiceSpy;
@@ -47,11 +47,20 @@ describe('Component: TestTypesListPage', () => {
 
   const testTypes: TestTypesReferenceDataModel[] = TestTypesReferenceDataMock.TestTypesData;
   const vehicle: VehicleTechRecordModel = TechRecordDataMock.VehicleTechRecordData;
+  const mockTestTypes = () =>
+    [
+      {
+        id: '1',
+        sortId: '1',
+        name: 'annual test'
+      }
+    ] as TestTypesReferenceDataModel[];
 
   beforeEach(async(() => {
     storageServiceSpy = jasmine.createSpyObj('StorageService', {
       read: new Promise((resolve) => resolve(testTypes))
     });
+
     vehicleServiceSpy = jasmine.createSpyObj('VehicleService', [
       'createVehicle',
       'addTestType',
@@ -63,6 +72,11 @@ describe('Component: TestTypesListPage', () => {
       'addCustomDimension'
     ]);
 
+    testTypeServiceSpy = jasmine.createSpyObj('TestTypeService', {
+      orderTestTypesArray: jasmine.createSpy('orderTestTypesArray').and.returnValue(null),
+      getTestTypesFromStorage: of(mockTestTypes)
+    });
+
     TestBed.configureTestingModule({
       declarations: [TestTypesListPage],
       imports: [PipesModule, IonicModule.forRoot(TestTypesListPage)],
@@ -71,7 +85,7 @@ describe('Component: TestTypesListPage', () => {
         CommonFunctionsService,
         DurationService,
         { provide: AnalyticsService, useValue: analyticsServiceSpy },
-        { provide: TestTypeService, useClass: TestTypeServiceMock },
+        { provide: TestTypeService, useValue: testTypeServiceSpy },
         { provide: VehicleService, useValue: vehicleServiceSpy },
         { provide: AuthenticationService, useClass: AuthenticationServiceMock },
         { provide: NavParams, useClass: NavParamsMock },
@@ -120,9 +134,31 @@ describe('Component: TestTypesListPage', () => {
     expect(vehicleService).toBeTruthy();
   });
 
-  it('should test ngOnInit logic', () => {
+  it('ngOnInit: should get test ref data via service call', () => {
+    comp.testTypeReferenceData = mockTestTypes();
     comp.ngOnInit();
+
+    expect(testTypeService.orderTestTypesArray).toHaveBeenCalledWith(
+      mockTestTypes(),
+      'sortId',
+      'asc'
+    );
     expect(navCtrl.getPrevious).toHaveBeenCalled();
+  });
+
+  it('ngOnInit: should get test ref data via internal storage', () => {
+    comp.testTypeReferenceData = null;
+    comp.ngOnInit();
+
+    testTypeService
+      .getTestTypesFromStorage()
+      .subscribe((subRefData: TestTypesReferenceDataModel[]) => {
+        expect(testTypeService.orderTestTypesArray).toHaveBeenCalledWith(
+          subRefData,
+          'sortId',
+          'asc'
+        );
+      });
   });
 
   it('should set the correct text to the back button', () => {

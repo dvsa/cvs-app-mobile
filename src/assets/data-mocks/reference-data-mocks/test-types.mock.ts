@@ -5,6 +5,7 @@ export class TestTypesReferenceDataMock {
     return [
       {
         id: '1',
+        sortId: '1',
         name: 'annual test',
         testTypeName: 'Annual test',
         forVehicleType: ['psv'],
@@ -20,6 +21,7 @@ export class TestTypesReferenceDataMock {
       },
       {
         id: '2',
+        sortId: '2',
         name: 'class 6a (seatbelt installation check)',
         forVehicleType: ['psv'],
         forVehicleSize: ['small', 'large'],
@@ -32,6 +34,7 @@ export class TestTypesReferenceDataMock {
         nextTestTypesOrCategories: [
           {
             id: '3',
+            sortId: '3',
             name: 'annual',
             testTypeName: 'Class 6A seatbelt installation check (annual test)',
             forVehicleType: ['psv'],
@@ -47,6 +50,7 @@ export class TestTypesReferenceDataMock {
           },
           {
             id: '4',
+            sortId: '4',
             name: 'first test',
             testTypeName: 'Class 6A seatbelt installation check (first test)',
             forVehicleType: ['psv'],
@@ -64,6 +68,7 @@ export class TestTypesReferenceDataMock {
       },
       {
         id: '5',
+        sortId: '5',
         name: 'retest',
         forVehicleType: ['psv'],
         forVehicleSize: ['large', 'small'],
@@ -76,6 +81,7 @@ export class TestTypesReferenceDataMock {
         nextTestTypesOrCategories: [
           {
             id: '6',
+            sortId: '6',
             name: 'paid',
             forVehicleType: ['psv'],
             forVehicleSize: ['large', 'small'],
@@ -88,6 +94,7 @@ export class TestTypesReferenceDataMock {
             nextTestTypesOrCategories: [
               {
                 id: '7',
+                sortId: '7',
                 name: 'any psv',
                 testTypeName: 'Paid retest',
                 forVehicleType: ['psv'],
@@ -103,6 +110,7 @@ export class TestTypesReferenceDataMock {
               },
               {
                 id: '8',
+                sortId: '8',
                 name: 'class 6a (seatbelt installation check)',
                 testTypeName: 'Paid retest with Class 6A seatbelt installation check',
                 forVehicleType: ['psv'],
@@ -120,6 +128,7 @@ export class TestTypesReferenceDataMock {
           },
           {
             id: '9',
+            sortId: '9',
             name: 'part paid',
             forVehicleType: ['psv'],
             forVehicleSize: ['large', 'small'],
@@ -131,7 +140,8 @@ export class TestTypesReferenceDataMock {
             forVehicleWheels: null,
             nextTestTypesOrCategories: [
               {
-                id: 'hjau6621',
+                id: '10',
+                sortId: '10',
                 name: 'triple test',
                 testTypeName: 'Triple test',
                 forVehicleType: ['psv'],
@@ -149,7 +159,8 @@ export class TestTypesReferenceDataMock {
         ]
       },
       {
-        id: 'bsgs2341212',
+        id: '11',
+        sortId: '11',
         name: 'full test',
         testTypeName: 'Full test',
         forVehicleType: ['psv', 'trailer'],
