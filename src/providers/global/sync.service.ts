@@ -9,7 +9,13 @@ import { Observable } from 'rxjs';
 import { AppVersion } from '@ionic-native/app-version';
 
 import { TestStationReferenceDataModel } from '../../models/reference-data-models/test-station.model';
-import { APP_STRINGS, APP_UPDATE, STORAGE } from '../../app/app.enums';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  APP_STRINGS,
+  APP_UPDATE,
+  STORAGE
+} from '../../app/app.enums';
 import { StorageService } from '../natives/storage.service';
 import { default as AppConfig } from '../../../config/application.hybrid';
 import { AppService } from './app.service';
@@ -17,6 +23,7 @@ import { AuthenticationService } from '../auth/authentication/authentication.ser
 import { AppVersionModel } from '../../models/latest-version.model';
 import { LogsProvider } from '../../modules/logs/logs.service';
 import { VERSION_POPUP_MSG } from '../../app/app.constants';
+import { AnalyticsService } from './analytics.service';
 
 declare let cordova: any;
 
@@ -39,6 +46,7 @@ export class SyncService {
     private alertCtrl: AlertController,
     private openNativeSettings: OpenNativeSettings,
     private callNumber: CallNumber,
+    private analyticsService: AnalyticsService,
     private authenticationService: AuthenticationService,
     private appVersion: AppVersion,
     private logProvider: LogsProvider
@@ -52,6 +60,7 @@ export class SyncService {
 
     if (this.appService.isCordova) {
       await this.checkForUpdate();
+      await this.trackUpdatedApp(this.currentAppVersion, this.latestAppVersion);
     }
 
     if (!this.appService.getRefDataSync()) {
@@ -130,6 +139,17 @@ export class SyncService {
         return [null, result.length === 4]; // ensure we have the exact and successful 4 apis call
       })
       .catch(() => [this.handleError()]);
+  }
+
+  async trackUpdatedApp(...params: string[]) {
+    const [currentAppVersion, latestAppVersion] = params;
+
+    if (!this.isVersionCheckedError && currentAppVersion === latestAppVersion) {
+      await this.analyticsService.logEvent({
+        category: ANALYTICS_EVENT_CATEGORIES.APP_UPDATE,
+        event: ANALYTICS_EVENTS.OS_UPDATE
+      });
+    }
   }
 
   getDataFromMicroservice(microservice): Observable<TestStationReferenceDataModel[]> {

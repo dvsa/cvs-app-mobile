@@ -17,16 +17,18 @@ import {
   SIGNATURE_STATUS,
   STORAGE,
   LOG_TYPES,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
   CONNECTION_STATUS
 } from './app.enums';
-import { AppService, SyncService, NetworkService } from '../providers/global';
+import { AppService, AnalyticsService, SyncService } from '../providers/global';
 import { ActivityService } from '../providers/activity/activity.service';
-// import { FirebaseLogsService } from '../providers/firebase-logs/firebase-logs.service';
 import { Log } from '../modules/logs/logs.model';
 import { LogsProvider } from './../modules/logs/logs.service';
 import { default as AppConfig } from '../../config/application.hybrid';
 import { ActivityModel } from '../models/visit/activity.model';
 import { VisitModel } from '../models/visit/visit.model';
+import { NetworkService } from '../providers/global/network.service';
 
 @Component({
   templateUrl: 'app.html'
@@ -53,8 +55,8 @@ export class MyApp {
     private authenticationService: AuthenticationService,
     private mobileAccessibility: MobileAccessibility,
     private renderer: Renderer2,
-    // private firebaseLogsService: FirebaseLogsService,
     private screenOrientation: ScreenOrientation,
+    private analyticsService: AnalyticsService,
     private logProvider: LogsProvider
   ) {
     platform.ready().then(() => {
@@ -107,6 +109,8 @@ export class MyApp {
   }
 
   async activateNativeFeatures(): Promise<void> {
+    await this.analyticsService.startAnalyticsTracking(AppConfig.ga.GOOGLE_ANALYTICS_ID);
+
     this.accessibilityFeatures();
     await this.screenOrientation.lock(this.screenOrientation.ORIENTATIONS.PORTRAIT_PRIMARY);
   }
@@ -155,18 +159,26 @@ export class MyApp {
 
   private accessibilityFeatures(): void {
     this.mobileAccessibility.updateTextZoom();
+
     this.mobileAccessibility
       .getTextZoom()
       .then((result) => {
         if (result !== ACCESSIBILITY_DEFAULT_VALUES.TEXT_SIZE) {
-          // this.firebaseLogsService.logEvent(FIREBASE.IOS_FONT_SIZE_USAGE);
+          this.analyticsService.logEvent({
+            category: ANALYTICS_EVENT_CATEGORIES.MOBILE_ACCESSIBILITY,
+            event: ANALYTICS_EVENTS.IOS_FONT_SIZE_USAGE
+          });
         }
         this.appService.setAccessibilityTextZoom(result);
       })
       .catch(() => this.appService.setAccessibilityTextZoom(106));
+
     this.mobileAccessibility.isVoiceOverRunning().then((result) => {
       if (result) {
-        // this.firebaseLogsService.logEvent(FIREBASE.IOS_VOICEOVER_USAGE);
+        this.analyticsService.logEvent({
+          category: ANALYTICS_EVENT_CATEGORIES.MOBILE_ACCESSIBILITY,
+          event: ANALYTICS_EVENTS.IOS_VOICEOVER_USAGE
+        });
       }
     });
 

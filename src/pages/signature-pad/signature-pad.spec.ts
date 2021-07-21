@@ -21,12 +21,12 @@ import {
 import { AppServiceMock } from '../../../test-config/services-mocks/app-service.mock';
 import { SignaturePad } from 'angular2-signaturepad/signature-pad';
 import { CallNumber } from '@ionic-native/call-number';
-// import { Firebase } from '@ionic-native/firebase';
 import { Store } from '@ngrx/store';
 import { LogsProvider } from '../../modules/logs/logs.service';
 import { AuthenticationService } from '../../providers/auth';
 import { AuthenticationServiceMock } from '../../../test-config/services-mocks/authentication-service.mock';
 import { TestStore } from '../../modules/logs/data-store.service.mock';
+import { AnalyticsService } from '../../providers/global';
 
 describe('Component: SignaturePadPage', () => {
   let fixture: ComponentFixture<SignaturePadPage>;
@@ -48,6 +48,8 @@ describe('Component: SignaturePadPage', () => {
   let callNumberSpy: any;
   let logProvider: LogsProvider;
   let logProviderSpy;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   beforeEach(async(() => {
     signatureServiceSpy = jasmine.createSpyObj('SignatureService', [
@@ -60,6 +62,11 @@ describe('Component: SignaturePadPage', () => {
       dispatchLog: () => true
     });
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'addCustomDimension'
+    ]);
+
     screenOrientationSpy = jasmine.createSpyObj('ScreenOrientation', ['lock']);
     openNativeSettingsSpy = jasmine.createSpyObj('OpenNativeSettings', ['open']);
     signaturePadSpy = jasmine.createSpyObj('SignaturePad', ['clear', 'toDataURL', 'isEmpty']);
@@ -69,7 +76,6 @@ describe('Component: SignaturePadPage', () => {
       declarations: [SignaturePadPage],
       imports: [IonicModule.forRoot(SignaturePadPage)],
       providers: [
-        // Firebase,
         { provide: AppService, useClass: AppServiceMock },
         { provide: SignatureService, useValue: signatureServiceSpy },
         { provide: NavController, useFactory: () => NavControllerMock.instance() },
@@ -82,7 +88,8 @@ describe('Component: SignaturePadPage', () => {
         { provide: AuthenticationService, useClass: AuthenticationServiceMock },
         { provide: Store, useClass: TestStore },
         { provide: CallNumber, useValue: callNumberSpy },
-        { provide: LogsProvider, useValue: logProviderSpy }
+        { provide: LogsProvider, useValue: logProviderSpy },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -101,6 +108,7 @@ describe('Component: SignaturePadPage', () => {
     openNativeSettings = TestBed.get(OpenNativeSettings);
     signaturePad = TestBed.get(SignaturePad);
     callNumber = TestBed.get(CallNumber);
+    analyticsService = TestBed.get(AnalyticsService);
   });
 
   afterEach(() => {

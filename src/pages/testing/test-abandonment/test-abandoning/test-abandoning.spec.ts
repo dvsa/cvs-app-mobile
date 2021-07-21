@@ -9,9 +9,8 @@ import { VisitService } from '../../../../providers/visit/visit.service';
 import { VisitServiceMock } from '../../../../../test-config/services-mocks/visit-service.mock';
 import { TestTypeService } from '../../../../providers/test-type/test-type.service';
 import { TestTypeServiceMock } from '../../../../../test-config/services-mocks/test-type-service.mock';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
 import { AlertControllerMock, NavControllerMock } from 'ionic-mocks';
+import { AnalyticsService } from '../../../../providers/global';
 
 describe('Component: TestAbandoningPage', () => {
   let component: TestAbandoningPage;
@@ -20,22 +19,29 @@ describe('Component: TestAbandoningPage', () => {
   let navParams: NavParams;
   let alertCtrl: AlertController;
   let visitService: VisitService;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   let vehicleTest: TestTypeModel = TestTypeDataModelMock.TestTypeData;
   const selectedReasons = ['Best reason', 'Second best reason'];
   const additionalComment = 'Some additional comment';
 
   beforeEach(async(() => {
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'addCustomDimension'
+    ]);
+
     TestBed.configureTestingModule({
       declarations: [TestAbandoningPage],
       imports: [IonicModule.forRoot(TestAbandoningPage)],
       providers: [
         { provide: NavController, useFactory: () => NavControllerMock.instance() },
         { provide: AlertController, useFactory: () => AlertControllerMock.instance() },
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
         { provide: VisitService, useClass: VisitServiceMock },
         { provide: TestTypeService, useClass: TestTypeServiceMock },
-        { provide: NavParams, useClass: NavParamsMock }
+        { provide: NavParams, useClass: NavParamsMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -48,6 +54,7 @@ describe('Component: TestAbandoningPage', () => {
     navParams = TestBed.get(NavParams);
     alertCtrl = TestBed.get(AlertController);
     visitService = TestBed.get(VisitService);
+    analyticsService = TestBed.get(AnalyticsService);
     component.additionalComment = null;
   });
 
@@ -108,14 +115,15 @@ describe('Component: TestAbandoningPage', () => {
     expect(navCtrl.popToRoot).not.toHaveBeenCalled();
   });
 
-  it('should update the vehicleTestModel with abandonment object', () => {
+  it('should update the vehicleTestModel with abandonment object', async () => {
     component.vehicleTest = vehicleTest;
     component.vehicleTest.additionalCommentsForAbandon = null;
     component.selectedReasons = navParams.get('selectedReasons');
     expect(component.vehicleTest.reasons.length).toEqual(0);
     expect(component.vehicleTest.additionalCommentsForAbandon).toEqual(null);
     component.additionalComment = additionalComment;
-    component.updateVehicleTestModel();
+
+    await component.updateVehicleTestModel();
     expect(component.vehicleTest.reasons.length).toEqual(2);
     expect(component.vehicleTest.additionalCommentsForAbandon).toEqual('Some additional comment');
   });

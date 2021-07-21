@@ -12,19 +12,27 @@ import { TestTypesReferenceDataMock } from '../../assets/data-mocks/reference-da
 import { CommonFunctionsService } from '../utils/common-functions';
 import { TestTypeModel } from '../../models/tests/test-type.model';
 import { TestTypeDataModelMock } from '../../assets/data-mocks/data-model/test-type-data-model.mock';
-import { TEST_TYPE_RESULTS, VEHICLE_TYPE } from '../../app/app.enums';
-// import { FirebaseLogsServiceMock } from '../../../test-config/services-mocks/firebaseLogsService.mock';
-// import { FirebaseLogsService } from '../firebase-logs/firebase-logs.service';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  DURATION_TYPE,
+  TEST_TYPE_RESULTS,
+  VEHICLE_TYPE
+} from '../../app/app.enums';
 import { VehicleDataMock } from '../../assets/data-mocks/vehicle-data.mock';
+import { AnalyticsService, DurationService } from '../global';
+import { Duration } from '../../models/duration.model';
 
 describe('Provider: TestTypeService', () => {
   let testTypeService: TestTypeService;
   let storageService: StorageService;
-  let visitService: VisitService;
-  // let firebaseLogsService: FirebaseLogsService;
-
-  let visitServiceSpy: any;
   let storageServiceSpy: any;
+  let visitService: VisitService;
+  let visitServiceSpy: any;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
+  let durationService: DurationService;
 
   const TEST_TYPES: TestTypesReferenceDataModel[] = TestTypesReferenceDataMock.TestTypesData;
   const DEFECT: DefectDetailsModel = DefectDetailsDataMock.DefectData;
@@ -36,28 +44,33 @@ describe('Provider: TestTypeService', () => {
       })
     });
     visitServiceSpy = jasmine.createSpyObj('VisitService', ['updateVisit']);
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'addCustomDimension'
+    ]);
 
     TestBed.configureTestingModule({
       providers: [
         TestTypeService,
         CommonFunctionsService,
+        DurationService,
         { provide: VisitService, useValue: visitServiceSpy },
-        { provide: StorageService, useValue: storageServiceSpy }
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock }
+        { provide: StorageService, useValue: storageServiceSpy },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ]
     });
 
     testTypeService = TestBed.get(TestTypeService);
     storageService = TestBed.get(StorageService);
     visitService = TestBed.get(VisitService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
+    durationService = TestBed.get(DurationService);
   });
 
   afterEach(() => {
     testTypeService = null;
     storageService = null;
     visitService = null;
-    // firebaseLogsService = null;
   });
 
   it('create a testType', () => {
@@ -73,35 +86,88 @@ describe('Provider: TestTypeService', () => {
     expect(testType.testTypeEndTimestamp).toBeTruthy();
   });
 
-  it('should add a defect in test array', () => {
-    let testType: TestTypeModel = TestTypeDataModelMock.TestTypeData;
-    expect(testType.defects.length).toEqual(0);
-    testTypeService.addDefect(testType, DEFECT);
-    expect(testType.defects.length).toEqual(1);
-    expect(visitService.updateVisit).toHaveBeenCalled();
+  describe('addDefect', () => {
+    let getDurationSpy: jasmine.Spy, getTakenDurationSpy: jasmine.Spy;
+    let timeStart: number;
+    let timeEnd: number;
+
+    beforeEach(() => {
+      timeStart = 1620242516913;
+      timeEnd = 1620243020205;
+      spyOn(Date, 'now').and.returnValue(timeEnd);
+
+      spyOn(durationService, 'setDuration');
+      getDurationSpy = spyOn(durationService, 'getDuration');
+      getTakenDurationSpy = spyOn(durationService, 'getTakenDuration');
+    });
+
+    it('should add a defect in test array', async () => {
+      let testType: TestTypeModel = TestTypeDataModelMock.TestTypeData;
+      expect(testType.defects.length).toEqual(0);
+
+      await testTypeService.addDefect(testType, DEFECT);
+
+      expect(testType.defects.length).toEqual(1);
+      expect(visitService.updateVisit).toHaveBeenCalled();
+      expect(analyticsService.logEvent).toHaveBeenCalled();
+      expect(analyticsService.addCustomDimension).toHaveBeenCalled();
+    });
+
+    it('should track adding of defect event', async () => {
+      const { deficiencyRef } = DefectDetailsDataMock.DefectData;
+
+      await testTypeService.trackAddDefect(deficiencyRef);
+
+      expect(analyticsService.logEvent).toHaveBeenCalledWith({
+        category: ANALYTICS_EVENT_CATEGORIES.DEFECTS,
+        event: ANALYTICS_EVENTS.ADD_DEFECT,
+        label: ANALYTICS_LABEL.DEFICIENCY_REFERENCE
+      });
+
+      const key = Object.keys(ANALYTICS_LABEL).indexOf('DEFICIENCY_REFERENCE') + 1;
+      expect(analyticsService.addCustomDimension).toHaveBeenCalledWith(key, deficiencyRef);
+    });
+
+    it('should track defect Duration', async () => {
+      const strType: string = DURATION_TYPE[DURATION_TYPE.DEFECT_TIME];
+      const duration: Duration = { start: timeStart, end: timeEnd };
+      getDurationSpy.and.returnValue(duration);
+      getTakenDurationSpy.and.returnValue(timeEnd);
+
+      await testTypeService.trackDefectDuration();
+
+      expect(durationService.setDuration).toHaveBeenCalledWith({ end: timeEnd }, strType);
+      expect(durationService.getDuration).toHaveBeenCalledWith(strType);
+      expect(durationService.getTakenDuration).toHaveBeenCalledWith(duration);
+    });
   });
 
-  it('should log exactly 2 events to firebase', () => {
-    // let testType: TestTypeModel = TestTypeDataModelMock.TestTypeData;
-    // spyOn(firebaseLogsService, 'logEvent').and.returnValue(Promise.resolve(true));
-    // testTypeService.addDefect(testType, DEFECT);
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalledTimes(2);
-  });
-
-  it('should remove a defect from test', () => {
+  it('should remove a defect from test', async () => {
     let testType: TestTypeModel = TestTypeDataModelMock.TestTypeData;
     testType.defects = DefectDetailsDataMock.DefectDetails;
     expect(testType.defects.length).toEqual(2);
-    testTypeService.removeDefect(testType, DEFECT);
+
+    await testTypeService.removeDefect(testType, DEFECT);
+
     expect(testType.defects.length).toEqual(1);
+    expect(analyticsService.logEvent).toHaveBeenCalled();
+    expect(analyticsService.addCustomDimension).toHaveBeenCalled();
   });
 
-  it('should log the remove event to firebase when removing a defect', () => {
-    // let testType: TestTypeModel = TestTypeDataModelMock.TestTypeData;
-    // testType.defects = DefectDetailsDataMock.DefectDetails;
-    // spyOn(firebaseLogsService, 'logEvent').and.returnValue(Promise.resolve(true));
-    // testTypeService.removeDefect(testType, DEFECT);
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalledTimes(1);
+  it('should track removing of defect event', async () => {
+    const { deficiencyRef } = DefectDetailsDataMock.DefectData;
+    const strRemoveLabel = 'DEFICIENCY_REFERENCE';
+
+    await testTypeService.trackRemoveDefect(deficiencyRef);
+
+    expect(analyticsService.logEvent).toHaveBeenCalledWith({
+      category: ANALYTICS_EVENT_CATEGORIES.DEFECTS,
+      event: ANALYTICS_EVENTS.REMOVE_DEFECT,
+      label: ANALYTICS_LABEL[strRemoveLabel]
+    });
+
+    const key = Object.keys(ANALYTICS_LABEL).indexOf(strRemoveLabel) + 1;
+    expect(analyticsService.addCustomDimension).toHaveBeenCalledWith(key, deficiencyRef);
   });
 
   it('should set test result to FAIL: hasDefects true', () => {

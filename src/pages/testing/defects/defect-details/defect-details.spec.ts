@@ -10,11 +10,17 @@ import { TestTypeDataModelMock } from '../../../../assets/data-mocks/data-model/
 import { TestTypeService } from '../../../../providers/test-type/test-type.service';
 import { TestTypeServiceMock } from '../../../../../test-config/services-mocks/test-type-service.mock';
 import { ViewControllerMock } from '../../../../../test-config/ionic-mocks/view-controller.mock';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
 import { By } from '@angular/platform-browser';
-import { TEST_TYPE_RESULTS, DEFICIENCY_CATEGORY, APP_STRINGS } from '../../../../app/app.enums';
+import {
+  TEST_TYPE_RESULTS,
+  DEFICIENCY_CATEGORY,
+  APP_STRINGS,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL
+} from '../../../../app/app.enums';
 import { NavControllerMock } from '../../../../../test-config/ionic-mocks/nav-controller.mock';
+import { AnalyticsService } from '../../../../providers/global';
 
 describe('Component: DefectDetailsPage', () => {
   let comp: DefectDetailsPage;
@@ -23,7 +29,8 @@ describe('Component: DefectDetailsPage', () => {
   let navParams: NavParams;
   let defectsService: DefectsService;
   let testTypeService: TestTypeService;
-  // let firebaseLogsService: FirebaseLogsService;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
 
   const vehicleTest: TestTypeModel = TestTypeDataModelMock.TestTypeData;
   const defect: DefectDetailsModel = {
@@ -119,6 +126,11 @@ describe('Component: DefectDetailsPage', () => {
       getBadgeColor: 'danger'
     });
 
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'addCustomDimension'
+    ]);
+
     TestBed.configureTestingModule({
       declarations: [DefectDetailsPage],
       imports: [IonicModule.forRoot(DefectDetailsPage)],
@@ -127,8 +139,8 @@ describe('Component: DefectDetailsPage', () => {
         { provide: TestTypeService, useClass: TestTypeServiceMock },
         { provide: DefectsService, useValue: defectsServiceSpy },
         { provide: NavParams, useClass: NavParamsMock },
-        { provide: ViewController, useClass: ViewControllerMock }
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock }
+        { provide: ViewController, useClass: ViewControllerMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     });
@@ -141,7 +153,7 @@ describe('Component: DefectDetailsPage', () => {
     navCtrl = TestBed.get(NavController);
     navParams = TestBed.get(NavParams);
     testTypeService = TestBed.get(TestTypeService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
   });
 
   beforeEach(() => {
@@ -169,7 +181,6 @@ describe('Component: DefectDetailsPage', () => {
     comp = null;
     defectsService = null;
     testTypeService = null;
-    // firebaseLogsService = null;
   });
 
   it('should create component', (done) => {
@@ -221,17 +232,20 @@ describe('Component: DefectDetailsPage', () => {
     });
   });
 
-  it('should contain the defect reference when a note is added', () => {
-    // comp.fromTestReview = true;
-    // comp.notesChanged = true;
-    // spyOn(firebaseLogsService, 'logEvent').and.returnValue(Promise.resolve(true));
-    // comp.addDefect();
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalledTimes(1);
-    // expect(firebaseLogsService.logEvent).toHaveBeenCalledWith(
-    //   FIREBASE_DEFECTS.DEFECT_NOTES_USAGE,
-    //   FIREBASE_DEFECTS.DEFICIENCY_REFERENCE,
-    //   defect.deficiencyRef
-    // );
+  it('should track the defect reference when a note is added', async () => {
+    comp.fromTestReview = true;
+    comp.notesChanged = true;
+
+    await comp.addDefect();
+
+    expect(analyticsService.logEvent).toHaveBeenCalledWith({
+      category: ANALYTICS_EVENT_CATEGORIES.DEFECTS,
+      event: ANALYTICS_EVENTS.DEFECT_NOTES_USAGE,
+      label: ANALYTICS_LABEL.DEFICIENCY_REFERENCE
+    });
+
+    const key = Object.keys(ANALYTICS_LABEL).indexOf('DEFICIENCY_REFERENCE') + 1;
+    expect(analyticsService.addCustomDimension).toHaveBeenCalledWith(key, defect.deficiencyRef);
   });
 
   it('should not change the prohibition attributes if defect category is not dangerous', () => {

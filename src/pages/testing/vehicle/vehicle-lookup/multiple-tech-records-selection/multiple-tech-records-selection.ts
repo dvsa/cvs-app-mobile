@@ -10,13 +10,21 @@ import {
 import { VehicleModel } from '../../../../../models/vehicle/vehicle.model';
 import { Observer } from 'rxjs';
 import { TestResultModel } from '../../../../../models/tests/test-result.model';
-import { APP_STRINGS, PAGE_NAMES, STORAGE } from '../../../../../app/app.enums';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  ANALYTICS_VALUE,
+  APP_STRINGS,
+  PAGE_NAMES,
+  STORAGE
+} from '../../../../../app/app.enums';
 import { AuthenticationService } from '../../../../../providers/auth/authentication/authentication.service';
 import { VehicleService } from '../../../../../providers/vehicle/vehicle.service';
 import { StorageService } from '../../../../../providers/natives/storage.service';
-// import { Firebase } from '@ionic-native/firebase';
 import { TestModel } from '../../../../../models/tests/test.model';
 import { LogsProvider } from '../../../../../modules/logs/logs.service';
+import { AnalyticsService } from '../../../../../providers/global';
 
 @IonicPage()
 @Component({
@@ -37,7 +45,7 @@ export class MultipleTechRecordsSelectionPage {
     private authenticationService: AuthenticationService,
     public vehicleService: VehicleService,
     public storageService: StorageService,
-    // private firebase: Firebase,
+    private analyticsService: AnalyticsService,
     private alertCtrl: AlertController,
     private logProvider: LogsProvider
   ) {
@@ -72,10 +80,8 @@ export class MultipleTechRecordsSelectionPage {
           timestamp: Date.now()
         });
 
-        // this.firebase.logEvent('test_error', {
-        //   content_type: 'error',
-        //   item_id: 'Failed retrieving the testResultsHistory'
-        // });
+        this.trackErrorOnRetrieval(ANALYTICS_VALUE.TEST_RESULT_HISTORY_FAILED);
+
         this.storageService.update(STORAGE.TEST_HISTORY + selectedVehicle.systemNumber, []);
         this.goToVehicleDetails(selectedVehicle);
       },
@@ -93,6 +99,14 @@ export class MultipleTechRecordsSelectionPage {
           LOADING.dismiss();
         });
     }
+  }
+
+  private async trackErrorOnRetrieval(value: string) {
+    await this.analyticsService.logEvent({
+      category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+      event: ANALYTICS_EVENTS.TEST_ERROR,
+      label: value
+    });
   }
 
   goToVehicleDetails(selectedVehicle: VehicleModel) {

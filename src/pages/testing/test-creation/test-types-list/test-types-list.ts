@@ -4,9 +4,16 @@ import { TestTypeService } from '../../../../providers/test-type/test-type.servi
 import { TestTypesReferenceDataModel } from '../../../../models/reference-data-models/test-types.model';
 import { VehicleService } from '../../../../providers/vehicle/vehicle.service';
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
-import { APP_STRINGS, PAGE_NAMES } from '../../../../app/app.enums';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  APP_STRINGS,
+  DURATION_TYPE,
+  PAGE_NAMES
+} from '../../../../app/app.enums';
 import { CommonFunctionsService } from '../../../../providers/utils/common-functions';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
+import { AnalyticsService, DurationService } from '../../../../providers/global';
 
 @IonicPage()
 @Component({
@@ -28,9 +35,10 @@ export class TestTypesListPage implements OnInit {
     private testTypeService: TestTypeService,
     private vehicleService: VehicleService,
     private viewCtrl: ViewController,
-    public commonFunctions: CommonFunctionsService
-  ) // private firebaseLogsService: FirebaseLogsService
-  {
+    public commonFunctions: CommonFunctionsService,
+    private analyticsService: AnalyticsService,
+    private durationService: DurationService
+  ) {
     this.vehicleData = navParams.get('vehicleData');
     this.testTypeReferenceData = navParams.get('testTypeData');
     this.previousPage = navParams.get('previousPage');
@@ -85,20 +93,15 @@ export class TestTypesListPage implements OnInit {
         backBtn: this.previousPage || APP_STRINGS.TEST_TYPE
       });
     } else {
-      // this.firebaseLogsService.add_test_type_time.add_test_type_end_time = Date.now();
-      // this.firebaseLogsService.add_test_type_time.add_test_type_time_taken = this.firebaseLogsService.differenceInSeconds(
-      //   this.firebaseLogsService.add_test_type_time.add_test_type_start_time,
-      //   this.firebaseLogsService.add_test_type_time.add_test_type_end_time
-      // );
-      // this.firebaseLogsService.logEvent(
-      //   FIREBASE.ADD_TEST_TYPE_TIME_TAKEN,
-      //   FIREBASE.ADD_TEST_TYPE_START_TIME,
-      //   this.firebaseLogsService.add_test_type_time.add_test_type_start_time.toString(),
-      //   FIREBASE.ADD_TEST_TYPE_END_TIME,
-      //   this.firebaseLogsService.add_test_type_time.add_test_type_end_time.toString(),
-      //   FIREBASE.ADD_TEST_TYPE_TIME_TAKEN,
-      //   this.firebaseLogsService.add_test_type_time.add_test_type_time_taken
-      // );
+      const type: string = DURATION_TYPE[DURATION_TYPE.TEST_TYPE];
+      this.durationService.setDuration({ end: Date.now() }, type);
+      const duration = this.durationService.getDuration(type);
+      const takenDuration = this.durationService.getTakenDuration(duration);
+
+      this.trackAddTestTypeDuration('ADD_TEST_TYPE_START_TIME', duration.start.toString());
+      this.trackAddTestTypeDuration('ADD_TEST_TYPE_END_TIME', duration.end.toString());
+      this.trackAddTestTypeDuration('ADD_TEST_TYPE_TIME_TAKEN', takenDuration.toString());
+
       let views = this.navCtrl.getViews();
       for (let i = views.length - 1; i >= 0; i--) {
         if (views[i].component.name == PAGE_NAMES.TEST_CREATE_PAGE) {
@@ -114,6 +117,19 @@ export class TestTypesListPage implements OnInit {
         }
       }
     }
+  }
+
+  async trackAddTestTypeDuration(label: string, value: string) {
+    await this.analyticsService.logEvent({
+      category: ANALYTICS_EVENT_CATEGORIES.TEST_TYPES,
+      event: ANALYTICS_EVENTS.ADD_TEST_TYPE_TIME_TAKEN,
+      label: ANALYTICS_LABEL[label]
+    });
+
+    await this.analyticsService.addCustomDimension(
+      Object.keys(ANALYTICS_LABEL).indexOf(label) + 1,
+      value
+    );
   }
 
   cancelTypes() {

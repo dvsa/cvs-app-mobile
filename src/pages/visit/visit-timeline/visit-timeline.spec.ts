@@ -35,14 +35,22 @@ import { VisitService } from '../../../providers/visit/visit.service';
 import { StorageService } from '../../../providers/natives/storage.service';
 import { StorageServiceMock } from '../../../../test-config/services-mocks/storage-service.mock';
 import { VisitDataMock } from '../../../assets/data-mocks/visit-data.mock';
-// import { FirebaseLogsService } from '../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../test-config/services-mocks/firebaseLogsService.mock';
 import { ActivityService } from '../../../providers/activity/activity.service';
 import { ActivityDataMock } from '../../../assets/data-mocks/activity.data.mock';
 import { TestStationDataMock } from '../../../assets/data-mocks/reference-data-mocks/test-station-data.mock';
 import { TestModel } from '../../../models/tests/test.model';
-import { APP_STRINGS, AUTH, PAGE_NAMES, STORAGE, VEHICLE_TYPE } from '../../../app/app.enums';
-// import { Firebase } from '@ionic-native/firebase';
+import {
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  ANALYTICS_VALUE,
+  APP_STRINGS,
+  AUTH,
+  DURATION_TYPE,
+  PAGE_NAMES,
+  STORAGE,
+  VEHICLE_TYPE
+} from '../../../app/app.enums';
 import { VehicleDataMock } from '../../../assets/data-mocks/vehicle-data.mock';
 import { VehicleModel } from '../../../models/vehicle/vehicle.model';
 import { FormatVrmPipe } from '../../../pipes/format-vrm/format-vrm.pipe';
@@ -51,13 +59,13 @@ import { LogsProvider } from '../../../modules/logs/logs.service';
 import { ActivityModel } from '../../../models/visit/activity.model';
 import { AuthenticationService } from '../../../providers/auth/authentication/authentication.service';
 import { AuthenticationServiceMock } from './../../../../test-config/services-mocks/authentication-service.mock';
+import { AnalyticsService, DurationService } from '../../../providers/global';
 
 describe('Component: VisitTimelinePage', () => {
   let component: VisitTimelinePage;
   let fixture: ComponentFixture<VisitTimelinePage>;
   let openNativeSettingsSpy: any;
   let loadingCtrl: LoadingController;
-  // let firebaseLogsService: FirebaseLogsService;
   let modalCtrl: ModalController;
   let alertCtrl: AlertController;
   let navCtrl: NavController;
@@ -70,6 +78,9 @@ describe('Component: VisitTimelinePage', () => {
   let logProvider: LogsProvider;
   let logProviderSpy: any;
   let authenticationService: AuthenticationService;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
+  let durationService: DurationService;
 
   let waitActivity = ActivityDataMock.WaitActivityData;
   let testStation = TestStationDataMock.TestStationData[0];
@@ -119,14 +130,18 @@ describe('Component: VisitTimelinePage', () => {
     ]);
 
     visitServiceSpy = jasmine.createSpyObj('VisitService', ['endVisit', 'getTests']);
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', [
+      'logEvent',
+      'setCurrentPage'
+    ]);
 
     TestBed.configureTestingModule({
       declarations: [VisitTimelinePage],
       imports: [IonicModule.forRoot(VisitTimelinePage), PipesModule],
       providers: [
-        // Firebase,
+        FormatVrmPipe,
+        DurationService,
         { provide: ModalController, useFactory: () => ModalControllerMock.instance() },
-        // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
         { provide: NavController, useFactory: () => NavControllerMock.instance() },
         { provide: NavParams, useClass: NavParamsMock },
         { provide: StateReformingService, useClass: StateReformingServiceMock },
@@ -142,7 +157,7 @@ describe('Component: VisitTimelinePage', () => {
         { provide: AuthenticationService, useClass: AuthenticationServiceMock },
         { provide: OpenNativeSettings, useValue: openNativeSettingsSpy },
         { provide: LogsProvider, useValue: logProviderSpy },
-        FormatVrmPipe
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     });
@@ -152,7 +167,6 @@ describe('Component: VisitTimelinePage', () => {
     fixture = TestBed.createComponent(VisitTimelinePage);
     component = fixture.componentInstance;
     loadingCtrl = TestBed.get(LoadingController);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
     activityService = TestBed.get(ActivityService);
     visitService = TestBed.get(VisitService);
     modalCtrl = TestBed.get(ModalController);
@@ -161,13 +175,14 @@ describe('Component: VisitTimelinePage', () => {
     storageService = TestBed.get(StorageService);
     authenticationService = TestBed.get(AuthenticationService);
     logProvider = TestBed.get(LogsProvider);
+    analyticsService = TestBed.get(AnalyticsService);
+    durationService = TestBed.get(DurationService);
   });
 
   afterEach(() => {
     fixture.destroy();
     component = null;
     loadingCtrl = null;
-    // firebaseLogsService = null;
     modalCtrl = null;
     alertCtrl = null;
     storageService = null;
@@ -184,9 +199,17 @@ describe('Component: VisitTimelinePage', () => {
   //   expect(component.platformSubscription.closed).toBeTruthy();
   // });
 
-  it('should test if logEvent method was called', () => {
+  it('should set starting duration for new test report', () => {
+    const startTime: number = 1620396073594;
+    spyOn(Date, 'now').and.returnValue(startTime);
+    spyOn(durationService, 'setDuration');
+
     component.createNewTestReport();
-    // expect(firebaseLogsService.search_vehicle_time.search_vehicle_start_time).toBeTruthy();
+
+    expect(durationService.setDuration).toHaveBeenCalledWith(
+      { start: startTime },
+      DURATION_TYPE[DURATION_TYPE.SEARCH_VEHICLE]
+    );
   });
 
   // it('should check ionViewDidEnter logic', () => {
@@ -301,7 +324,6 @@ describe('Component: VisitTimelinePage', () => {
   describe('confirmEndVisit$', () => {
     beforeEach(() => {
       component.visit = getMockVisit();
-      // spyOn(firebaseLogsService, 'logEvent');
       spyOn(component, 'showLoading');
     });
 
@@ -321,7 +343,10 @@ describe('Component: VisitTimelinePage', () => {
       expect(component.isCreateTestEnabled).toBeFalsy();
       expect(component.showLoading).toHaveBeenCalledWith(APP_STRINGS.END_VISIT_LOADING);
       expect(visitService.endVisit).toHaveBeenCalledWith(getMockVisit().id);
-      // expect(firebaseLogsService.logEvent).toHaveBeenCalledWith(FIREBASE.SUBMIT_VISIT);
+      expect(analyticsService.logEvent).toHaveBeenCalledWith({
+        category: ANALYTICS_EVENT_CATEGORIES.VISIT,
+        event: ANALYTICS_EVENTS.SUBMIT_VISIT
+      });
       expect(logProvider.dispatchLog).toHaveBeenCalled();
       expect(alertCtrl.create).toHaveBeenCalledWith({
         title: APP_STRINGS.SITE_VISIT_CLOSED_TITLE,
@@ -345,11 +370,13 @@ describe('Component: VisitTimelinePage', () => {
 
       expect(component.showLoading).toHaveBeenCalledWith('');
       expect(logProvider.dispatchLog).toHaveBeenCalled();
-      // expect(firebaseLogsService.logEvent).toHaveBeenCalledWith(
-      //   FIREBASE.TEST_ERROR,
-      //   FIREBASE.ERROR,
-      //   FIREBASE.ENDING_ACTIVITY_FAILED
-      // );
+
+      expect(analyticsService.logEvent).toHaveBeenCalledWith({
+        category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+        event: ANALYTICS_EVENTS.TEST_ERROR,
+        label: ANALYTICS_VALUE.ENDING_ACTIVITY_FAILED
+      });
+
       expect(alertCtrl.create).toHaveBeenCalledWith({
         title: APP_STRINGS.UNABLE_TO_END_VISIT,
         message: APP_STRINGS.NO_INTERNET_CONNECTION,
@@ -393,11 +420,12 @@ describe('Component: VisitTimelinePage', () => {
 
         expect(component.showLoading).toHaveBeenCalledWith('');
         expect(logProvider.dispatchLog).toHaveBeenCalled();
-        // expect(firebaseLogsService.logEvent).toHaveBeenCalledWith(
-        //   FIREBASE.TEST_ERROR,
-        //   FIREBASE.ERROR,
-        //   FIREBASE.WAIT_ACTIVITY_SUBMISSION_FAILED
-        // );
+
+        expect(analyticsService.logEvent).toHaveBeenCalledWith({
+          category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+          event: ANALYTICS_EVENTS.TEST_ERROR,
+          label: ANALYTICS_VALUE.WAIT_ACTIVITY_SUBMISSION_FAILED
+        });
       });
     });
 

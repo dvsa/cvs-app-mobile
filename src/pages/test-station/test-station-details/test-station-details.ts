@@ -8,15 +8,22 @@ import {
 } from 'ionic-angular';
 import { AlertController } from 'ionic-angular';
 import { TestStationReferenceDataModel } from '../../../models/reference-data-models/test-station.model';
-import { APP_STRINGS, PAGE_NAMES, AUTH } from '../../../app/app.enums';
+import {
+  APP_STRINGS,
+  PAGE_NAMES,
+  AUTH,
+  ANALYTICS_SCREEN_NAMES,
+  ANALYTICS_EVENT_CATEGORIES,
+  ANALYTICS_EVENTS,
+  ANALYTICS_LABEL,
+  ANALYTICS_VALUE
+} from '../../../app/app.enums';
 import { VisitService } from '../../../providers/visit/visit.service';
 import { CallNumber } from '@ionic-native/call-number';
 import { OpenNativeSettings } from '@ionic-native/open-native-settings';
-// import { Firebase } from '@ionic-native/firebase';
 import { Subscription } from 'rxjs';
 import { AuthenticationService } from '../../../providers/auth/authentication/authentication.service';
-// import { FirebaseLogsService } from '../../../providers/firebase-logs/firebase-logs.service';
-import { AppService } from '../../../providers/global/app.service';
+import { AppService, AnalyticsService } from '../../../providers/global';
 import { LogsProvider } from '../../../modules/logs/logs.service';
 
 @IonicPage()
@@ -39,10 +46,9 @@ export class TestStationDetailsPage {
     private callNumber: CallNumber,
     private visitService: VisitService,
     private openNativeSettings: OpenNativeSettings,
-    // private firebase: Firebase,
     private loadingCtrl: LoadingController,
     private authenticationService: AuthenticationService,
-    // private firebaseLogsService: FirebaseLogsService,
+    private analyticsService: AnalyticsService,
     private appService: AppService,
     private logProvider: LogsProvider
   ) {
@@ -50,7 +56,7 @@ export class TestStationDetailsPage {
   }
 
   ionViewDidEnter() {
-    // this.firebaseLogsService.setScreenName(FIREBASE_SCREEN_NAMES.TEST_STATION_DETAILS);
+    this.analyticsService.setCurrentPage(ANALYTICS_SCREEN_NAMES.TEST_STATION_DETAILS);
   }
 
   ionViewDidLoad() {
@@ -89,10 +95,11 @@ export class TestStationDetailsPage {
         this.isNextPageLoading = false;
         LOADING.dismiss();
 
-        // this.firebase.logEvent('test_error', {
-        //   content_type: 'error',
-        //   item_id: 'Starting activity failed'
-        // });
+        this.analyticsService.logEvent({
+          category: ANALYTICS_EVENT_CATEGORIES.ERRORS,
+          event: ANALYTICS_EVENTS.TEST_ERROR,
+          label: ANALYTICS_VALUE.START_ACTIVITY_FAILED
+        });
 
         if (error && error.error === AUTH.INTERNET_REQUIRED) {
           const TRY_AGAIN_ALERT = this.alertCtrl.create({

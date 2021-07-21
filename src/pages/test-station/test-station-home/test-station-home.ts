@@ -3,12 +3,22 @@ import { ScreenOrientation } from '@ionic-native/screen-orientation';
 import { Store } from '@ngrx/store';
 import { IonicPage, NavController } from 'ionic-angular';
 
-import { APP_STRINGS, LOG_TYPES, PAGE_NAMES, TESTER_ROLES } from '../../../app/app.enums';
-import { AppService, SyncService, AppAlertService } from '../../../providers/global';
+import {
+  ANALYTICS_SCREEN_NAMES,
+  APP_STRINGS,
+  LOG_TYPES,
+  PAGE_NAMES,
+  TESTER_ROLES
+} from '../../../app/app.enums';
+import {
+  AppService,
+  AnalyticsService,
+  SyncService,
+  AppAlertService
+} from '../../../providers/global';
 import { AuthenticationService } from '../../../providers/auth/authentication/authentication.service';
 import { LogsModel } from '../../../modules/logs/logs.model';
 import { StartSendingLogs } from '../../../modules/logs/logs.actions';
-// import { FirebaseLogsService } from '../../../providers/firebase-logs/firebase-logs.service';
 import { LogsProvider } from '../../../modules/logs/logs.service';
 
 @IonicPage()
@@ -27,7 +37,7 @@ export class TestStationHomePage implements OnInit {
     private syncService: SyncService,
     private alertService: AppAlertService,
     private store$: Store<LogsModel>,
-    // private firebaseLogsService: FirebaseLogsService,
+    private analyticsService: AnalyticsService,
     private logProvider: LogsProvider
   ) {}
 
@@ -44,9 +54,9 @@ export class TestStationHomePage implements OnInit {
 
     if (this.appService.isCordova) {
       this.screenOrientation.lock(this.screenOrientation.ORIENTATIONS.PORTRAIT_PRIMARY);
-    }
 
-    // this.firebaseLogsService.setScreenName(FIREBASE_SCREEN_NAMES.GET_STARTED);
+      this.analyticsService.setCurrentPage(ANALYTICS_SCREEN_NAMES.GET_STARTED);
+    }
   }
 
   async ionViewDidEnter() {

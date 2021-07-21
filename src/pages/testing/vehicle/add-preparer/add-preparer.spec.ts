@@ -25,13 +25,11 @@ import { AlertControllerMock } from 'ionic-mocks';
 import { of } from 'rxjs/observable/of';
 import { AuthenticationService } from '../../../../providers/auth/authentication/authentication.service';
 import { AuthenticationServiceMock } from '../../../../../test-config/services-mocks/authentication-service.mock';
-import { APP_STRINGS, VEHICLE_TYPE } from '../../../../app/app.enums';
-// import { FirebaseLogsService } from '../../../../providers/firebase-logs/firebase-logs.service';
-// import { FirebaseLogsServiceMock } from '../../../../../test-config/services-mocks/firebaseLogsService.mock';
+import { ANALYTICS_SCREEN_NAMES, APP_STRINGS, VEHICLE_TYPE } from '../../../../app/app.enums';
 import { VehicleDataMock } from '../../../../assets/data-mocks/vehicle-data.mock';
 import { CommonFunctionsService } from '../../../../providers/utils/common-functions';
 import { VehicleModel } from '../../../../models/vehicle/vehicle.model';
-import { AppService } from '../../../../providers/global';
+import { AppService, AnalyticsService, DurationService } from '../../../../providers/global';
 
 describe('Component: AddPreparerPage', () => {
   let comp: AddPreparerPage;
@@ -42,7 +40,9 @@ describe('Component: AddPreparerPage', () => {
   let vehicleService: VehicleService;
   let visitService: VisitService;
   let preparerServiceSpy: any;
-  // let firebaseLogsService: FirebaseLogsService;
+  let analyticsService: AnalyticsService;
+  let analyticsServiceSpy: any;
+  let durationService: DurationService;
 
   const TECH_RECORD: VehicleTechRecordModel = TechRecordDataMock.VehicleTechRecordData;
   const VEHICLE: VehicleModel = VehicleDataMock.VehicleData;
@@ -58,6 +58,7 @@ describe('Component: AddPreparerPage', () => {
         NavController,
         TestService,
         CommonFunctionsService,
+        DurationService,
         // { provide: FirebaseLogsService, useClass: FirebaseLogsServiceMock },
         { provide: AlertController, useFactory: () => AlertControllerMock.instance() },
         { provide: AuthenticationService, useClass: AuthenticationServiceMock },
@@ -66,7 +67,8 @@ describe('Component: AddPreparerPage', () => {
         { provide: VehicleService, useClass: VehicleServiceMock },
         { provide: ViewController, useClass: ViewControllerMock },
         { provide: VisitService, useClass: VisitDataMock },
-        { provide: AppService, useClass: AppServiceMock }
+        { provide: AppService, useClass: AppServiceMock },
+        { provide: AnalyticsService, useValue: analyticsServiceSpy }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -80,7 +82,8 @@ describe('Component: AddPreparerPage', () => {
     navCtrl = TestBed.get(NavController);
     vehicleService = TestBed.get(VehicleService);
     visitService = TestBed.get(VisitService);
-    // firebaseLogsService = TestBed.get(FirebaseLogsService);
+    analyticsService = TestBed.get(AnalyticsService);
+    durationService = TestBed.get(DurationService);
   });
 
   beforeEach(() => {
@@ -93,6 +96,8 @@ describe('Component: AddPreparerPage', () => {
       };
       return params[param];
     });
+
+    analyticsServiceSpy = jasmine.createSpyObj('AnalyticsService', ['setCurrentPage']);
   });
 
   afterEach(() => {
@@ -102,7 +107,6 @@ describe('Component: AddPreparerPage', () => {
     testService = null;
     vehicleService = null;
     visitService = null;
-    // firebaseLogsService = null;
   });
 
   it('should create the component', () => {
@@ -114,9 +118,10 @@ describe('Component: AddPreparerPage', () => {
   });
 
   it('should test ionViewDidEnterLogic', () => {
-    // spyOn(firebaseLogsService, 'setScreenName');
-    // comp.ionViewDidEnter();
-    // expect(firebaseLogsService.setScreenName).toHaveBeenCalled();
+    comp.ionViewDidEnter();
+    expect(analyticsService.setCurrentPage).toHaveBeenCalledWith(
+      ANALYTICS_SCREEN_NAMES.ENTER_PREPARER
+    );
   });
 
   it('should VehicleService and TestCancelPage Component share the same instance', inject(

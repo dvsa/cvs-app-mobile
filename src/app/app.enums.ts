@@ -432,69 +432,97 @@ export enum WAIT_TIME_REASONS {
   OTHER = 'Other'
 }
 
-export enum FIREBASE {
+export enum DURATION_TYPE {
+  SEARCH_VEHICLE,
+  CONFIRM_VEHICLE,
+  CONFIRM_PREPARER,
+  ODOMETER_READING,
+  DEFECT_TIME,
+  TEST_TYPE
+}
+
+export enum ANALYTICS_EVENT_CATEGORIES {
+  MOBILE_ACCESSIBILITY = 'accessibility',
+  APP_UPDATE = 'app_update',
+  DEFECTS = 'defects',
+  TEST_TYPES = 'test_types',
+  ERRORS = 'errors',
+  REVIEWS = 'reviews',
+  DURATION = 'duration',
+  VISIT = 'visit',
+  TEST = 'test'
+}
+
+export enum ANALYTICS_EVENTS {
+  OS_UPDATE = 'os_update',
+  IOS_FONT_SIZE_USAGE = 'ios_font_size_usage',
+  IOS_VOICEOVER_USAGE = 'ios_voiceover_usage',
+  DEFECT_NOTES_USAGE = 'defect_notes_usage',
+  REMOVE_DEFECT = 'remove_defect',
+  ADD_DEFECT = 'add_defect',
+  ADD_DEFECT_TIME_TAKEN = 'add_defect_time_taken',
+  ABANDON_TEST_TYPE = 'abandon_test_type',
+  REMOVE_TEST_TYPE = 'remove_test_type',
+  TEST_ERROR = 'test_error',
   TEST_REVIEW_UNSUCCESSFUL = 'test_review_unsuccessful',
+  ADD_ODOMETER_READING_TIME_TAKEN = 'add_odometer_reading_time_taken',
+  CANCEL_TEST = 'cancel_test',
+  SUBMIT_TEST = 'submit_test',
+  SUBMIT_VISIT = 'submit_visit',
+  ADD_TEST_TYPE_TIME_TAKEN = 'add_test_type_time_taken',
+  SEARCH_VEHICLE_TIME_TAKEN = 'search_vehicle_time_taken',
+  CONFIRM_VEHICLE_TIME_TAKEN = 'confirm_vehicle_time_taken',
+  CONFIRM_PREPARER_TIME_TAKEN = 'confirm_preparer_time_taken'
+}
+
+export enum ANALYTICS_LABEL {
+  DEFICIENCY_REFERENCE = 'deficiency_reference',
+  TEST_TYPE_NAME = 'test_type_name',
+  ERROR = 'error',
   MISSING_MADATORY_FIELD = 'missing_mandatory_field',
+
+  ADD_DEFECT_START_TIME = 'add_defect_start_time',
+  ADD_DEFECT_END_TIME = 'add_defect_end_time',
+  ADD_DEFECT_TIME_TAKEN = 'add_defect_time_taken',
+
+  ADD_ODOMETER_READING_START_TIME = 'add_odometer_reading_start_time',
+  ADD_ODOMETER_READING_END_TIME = 'add_odometer_reading_end_time',
+  ADD_ODOMETER_READING_TIME_TAKEN = 'add_odometer_reading_time_taken',
+
+  ADD_TEST_TYPE_START_TIME = 'add_test_type_start_time',
+  ADD_TEST_TYPE_END_TIME = 'add_test_type_end_time',
+  ADD_TEST_TYPE_TIME_TAKEN = 'add_test_type_time_taken',
+
+  SEARCH_VEHICLE_START_TIME = 'search_vehicle_start_time',
+  SEARCH_VEHICLE_END_TIME = 'search_vehicle_end_time',
+  SEARCH_VEHICLE_TIME_TAKEN = 'search_vehicle_time_taken',
+
+  CONFIRM_VEHICLE_START_TIME = 'confirm_vehicle_start_time',
+  CONFIRM_VEHICLE_END_TIME = 'confirm_vehicle_end_time',
+  CONFIRM_VEHICLE_TIME_TAKEN = 'confirm_vehicle_time_taken',
+
+  CONFIRM_PREPARER_TIME_TAKEN = 'confirm_preparer_time_taken',
+  CONFIRM_PREPARER_START_TIME = 'confirm_preparer_start_time',
+  CONFIRM_PREPARER_END_TIME = 'confirm_preparer_end_time'
+}
+
+export enum ANALYTICS_VALUE {
+  NO_TEST_ADDED = 'No test added before review',
+  NOT_ALL_TESTS_COMPLETED = 'Not all tests completed before review',
   COUNTRY_OF_REGISTRATION = 'countryOfRegistration',
   EU_VEHICLE_CATEGORY = 'euVehicleCategory',
   ODOMETER_READING = 'odometerReading',
-  NOT_ALL_TESTS_COMPLETED = 'Not all tests completed before review',
-  NO_TEST_ADDED = 'No test added before review',
-  SUBMIT_TEST = 'submit_test',
-  SUBMIT_VISIT = 'submit_visit',
-  CANCEL_TEST = 'cancel_test',
-  TEST_ERROR = 'test_error',
-  ERROR = 'error',
-  ENDING_ACTIVITY_FAILED = 'Ending activity failed',
-  WAIT_ACTIVITY_SUBMISSION_FAILED = 'wait_activity_submission_failed',
   TEST_SUBMISSION_FAILED = 'Test submission failed',
-  ADD_ODOMETER_READING_TIME_TAKEN = 'add_odometer_reading_time_taken',
-  ADD_ODOMETER_READING_START_TIME = 'add_odometer_reading_start_time',
-  ADD_ODOMETER_READING_END_TIME = 'add_odometer_reading_end_time',
-  CONFIRM_PREPARER_TIME_TAKEN = 'confirm_preparer_time_taken',
-  CONFIRM_PREPARER_START_TIME = 'confirm_preparer_start_time',
-  CONFIRM_PREPARER_END_TIME = 'confirm_preparer_end_time',
-  SEARCH_VEHICLE_TIME_TAKEN = 'search_vehicle_time_taken',
-  SEARCH_VEHICLE_START_TIME = 'search_vehicle_start_time',
-  SEARCH_VEHICLE_END_TIME = 'search_vehicle_end_time',
-  CONFIRM_VEHICLE_TIME_TAKEN = 'confirm_vehicle_time_taken',
-  CONFIRM_VEHICLE_START_TIME = 'confirm_vehicle_start_time',
-  CONFIRM_VEHICLE_END_TIME = 'confirm_vehicle_end_time',
-  ADD_TEST_TYPE_TIME_TAKEN = 'add_test_type_time_taken',
-  ADD_TEST_TYPE_START_TIME = 'add_test_type_start_time',
-  ADD_TEST_TYPE_END_TIME = 'add_test_type_end_time',
-  REMOVE_TEST_TYPE = 'remove_test_type',
-  ABANDON_TEST_TYPE = 'abandon_test_type',
-  TEST_TYPE_NAME = 'test_type_name',
-  IOS_FONT_SIZE_USAGE = 'ios_font_size_usage',
-  IOS_VOICEOVER_USAGE = 'ios_voiceover_usage'
+  ENDING_ACTIVITY_FAILED = 'Ending activity failed',
+  WAIT_ACTIVITY_SUBMISSION_FAILED = 'Wait activity submission failed',
+  START_ACTIVITY_FAILED = 'Starting activity failed',
+  TEST_RESULT_HISTORY_FAILED = 'Failed retrieving the testResultsHistory',
+  TEST_RECORD_FAILED = 'Failed retrieving the techRecord',
+  VEHICLE_NOT_FOUND = 'Vehicle not found',
+  SAVING_SIGNATURE_FAILED = 'Saving signature failed'
 }
 
-export enum FIREBASE_AUTH {
-  LOGIN_ATTEMPT = 'login_attempt',
-  LOGIN_UNSUCCESSFUL = 'login_unsuccessful',
-  LOGIN_SUCCESSFUL = 'login_successful',
-
-  CLIENT_ID = 'client_id',
-  REDIRECT_URL = 'redirect_url',
-  RESOURCE_URL = 'resource_url',
-  TENANT_ID = 'tenant_id',
-  OID = 'OID',
-  USER_ROLES = 'user_roles',
-  ERROR_MESSAGE = 'error_message'
-}
-
-export enum FIREBASE_DEFECTS {
-  ADD_DEFECT = 'add_defect',
-  REMOVE_DEFECT = 'remove_defect',
-  DEFECT_NOTES_USAGE = 'defect_notes_usage',
-  ADD_DEFECT_TIME_TAKEN = 'add_defect_time_taken',
-  DEFICIENCY_REFERENCE = 'deficiency_reference',
-  ADD_DEFECT_START_TIME = 'add_defect_start_time',
-  ADD_DEFECT_END_TIME = 'add_defect_end_time'
-}
-
-export enum FIREBASE_SCREEN_NAMES {
+export enum ANALYTICS_SCREEN_NAMES {
   GET_STARTED = 'Get Started Screen',
   TEST_STATION_SEARCH = 'Test Station Search Screen',
   TEST_STATION_DETAILS = 'Test Station Details Screen',
